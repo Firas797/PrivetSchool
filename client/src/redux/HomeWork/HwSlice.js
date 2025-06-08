@@ -15,7 +15,9 @@ export const fetchHomeWorks = createAsyncThunk('homeWorks/fetchHomeWorks', async
 // Thunk for adding homework
 export const addHomeWorkAsync = createAsyncThunk('homeWorks/addHomeWork', async (homeWorkData, { rejectWithValue }) => {
   try {
-    const response = await axios.post('/api/createHw', homeWorkData);
+    // Ensure homeWorkData is correctly formatted
+    const { Title, classe, description, category } = homeWorkData;
+    const response = await axios.post('/api/createHw', { Title, classe, description, category });
     toast.success('Homework added successfully');
     return response.data.homeWork;
   } catch (error) {

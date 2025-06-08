@@ -168,9 +168,9 @@ padding-right: 20px;
 }
 
 .nav-links button:hover {
-  background-color: #555;
+  background-color: #4bc0e5;
 }
 
 .nav-links .active button {
-  background-color: #555;
+  background-color: #4bc0e5;
 }

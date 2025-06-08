@@ -11,6 +11,7 @@ import AllTeachers from './componenet/DashboardAdmin/SideBarAdmin/lesProfs/ListT
 import Students from './componenet/DashboardStudents/Students'
 
 import Teacher from './componenet/DashboardTeachhers/SideBarTeacher/AllSideTeacher'
+import Quiz from './componenet/QuizTemplate/Quiz'
 function App() {
 
 const isAdmi = useSelector((state)=> state.user?.role)
@@ -25,13 +26,13 @@ const isAdmi = useSelector((state)=> state.user?.role)
       <Route path="/" element={<Landing />} />
 
 
-               <Route path="/login" element={<Login />} />
-               <Route path="/loginProf" element={<LoginTeacher />} />
+               {/* <Route path="/login" element={<Login />} />
+               <Route path="/loginProf" element={<LoginTeacher />} /> */}
 
                <Route path="/register" element={<Register />} />
                
 
-                         <Route path="/Admin" element={<AllSide />} />
+                         {/* <Route path="/Admin" element={<AllSide />} />
                          <Route path="/dashboardTeacher" element={<DashboardTeachers />} />
                          <Route path="/getAllTeachers" element={<AllTeachers />} />
 
@@ -42,6 +43,8 @@ const isAdmi = useSelector((state)=> state.user?.role)
 
 
                          <Route path="/Teacher" element={<Teacher />} />
+                         <Route path="/Test" element={<Quiz/>} />
+ */}
 
 
       </Routes>

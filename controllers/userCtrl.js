@@ -1,146 +1,310 @@
-const Users = require("../models/userModel")
-const bcrypt = require('bcrypt')
-const jwt = require('jsonwebtoken')
+const Users = require("../models/userModel");
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 const userCtrl = {
     register: async (req, res) => {
         try {
-          const { name, CIN, email, password , childN ,Ntel,classChild} = req.body;
-      
-          const user = await Users.findOne({ email });
-          if (user) return res.status(400).json({ msg: "The email already exists." });
-          const cin = await Users.findOne({ CIN });
-      
-      
-          if (password.length < 6) { 
-            return res
-              .status(400)
-              .json({ msg: "Password should be at least 6 characters long." });
-          }
-      
-          // Password Encryption
-          const passwordHash = await bcrypt.hash(password, 10);
-          const newUser = new Users({
-            name,
-            email,
-            CIN,
-            childN,
-            password: passwordHash,
-            Ntel,
-            classChild
-          });
-      
-          // Save to MongoDB
-          await newUser.save();
-      
-          // Then create jsonwebtoken for authentication
-          const accessToken = createAccessToken({ id: newUser._id });
-          const refreshToken = createRefreshToken({ id: newUser._id });
-      
-          res.cookie("refreshtoken", refreshToken, {
-            httpOnly: true,
-            path: "/user/refresh_token",
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-          });
-      
-          res.json({ token: accessToken }); // Send the access token in the response
-      
-        } catch (err) {
-          return res.status(500).json({ msg: err.message });
-        }
-      },
-    login: async (req, res) =>{
-        try {
-            const {email, password} = req.body;
+            const { parentName, email, password, phoneNumber, address, plan, children } = req.body;
 
-            const user = await Users.findOne({email})
-            if(!user) return res.status(400).json({msg: "User does not exist."})
+            // Validation des données
+            if (!parentName || !email || !password || !phoneNumber || !address || !plan || !children) {
+                return res.status(400).json({ msg: "Tous les champs sont obligatoires" });
+            }
 
-            const isMatch = await bcrypt.compare(password, user.password)
-            if(!isMatch) return res.status(400).json({msg: "Incorrect password."})
+            if (children.length === 0) {
+                return res.status(400).json({ msg: "Au moins un enfant doit être enregistré" });
+            }
 
-            // If login success , create access token and refresh token
-            const accesstoken = createAccessToken({id: user._id})
-            const refreshtoken = createRefreshToken({id: user._id})
-            const token = accesstoken
+            const user = await Users.findOne({ email });
+            if (user) return res.status(400).json({ msg: "Cet email est déjà utilisé." });
 
-            res.cookie('refreshtoken', refreshtoken, {
+            if (password.length < 6) {
+                return res.status(400).json({ msg: "Le mot de passe doit contenir au moins 6 caractères." });
+            }
+
+            // Création du nouvel utilisateur
+            const newUser = new Users({
+                parentName,
+                email,
+                password,
+                phoneNumber,
+                address,
+                plan,
+                children
+            });
+
+            // Sauvegarde en base de données
+            await newUser.save();
+
+            // Génération des tokens
+            const accessToken = createAccessToken({ id: newUser._id, role: newUser.role });
+            const refreshToken = createRefreshToken({ id: newUser._id, role: newUser.role });
+
+            // Stockage du refresh token en base
+            await Users.findByIdAndUpdate(newUser._id, { refreshToken });
+
+            // Configuration du cookie
+            res.cookie("refreshtoken", refreshToken, {
                 httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
+                path: "/user/refresh_token",
+                maxAge: 7 * 24 * 60 * 60 * 1000 // 7 jours
+            });
+
+            // Réponse avec les données utilisateur (sans mot de passe)
+            const userResponse = {
+                _id: newUser._id,
+                parentName: newUser.parentName,
+                email: newUser.email,
+                phoneNumber: newUser.phoneNumber,
+                address: newUser.address,
+                plan: newUser.plan,
+                children: newUser.children,
+                role: newUser.role,
+                createdAt: newUser.createdAt
+            };
+
+            res.status(201).json({
+                msg: "Inscription réussie",
+                token: accessToken,
+                user: userResponse
+            });
+
+        } catch (err) {
+            console.error('Erreur lors de l\'inscription:', err);
+            return res.status(500).json({ 
+                msg: err.message,
+                ...(err.errors && { errors: Object.values(err.errors).map(e => e.message) })
+            });
+        }
+    },
+
+    login: async (req, res) => {
+        try {
+            const { email, password } = req.body;
+
+            if (!email || !password) {
+                return res.status(400).json({ msg: "Veuillez fournir un email et un mot de passe" });
+            }
+
+            const user = await Users.findOne({ email });
+            if (!user) return res.status(400).json({ msg: "Utilisateur non trouvé." });
+
+            const isMatch = await user.comparePassword(password);
+            if (!isMatch) return res.status(400).json({ msg: "Mot de passe incorrect." });
+
+            // Génération des tokens
+            const accessToken = createAccessToken({ id: user._id, role: user.role });
+            const refreshToken = createRefreshToken({ id: user._id, role: user.role });
+
+            // Mise à jour du refresh token en base
+            await Users.findByIdAndUpdate(user._id, { refreshToken });
+
+            // Configuration du cookie
+            res.cookie('refreshtoken', refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
                 path: '/user/refresh_token',
-                maxAge: 7*24*60*60*1000 // 7d
-            })
+                maxAge: 7 * 24 * 60 * 60 * 1000 // 7 jours
+            });
 
-            res.json({msg: "user logged",
-        user : {
-            name : user.name,
-            email : user.email,
-            role : user.role ,
-            childN:user.childN,
-            class :user.classChild
+            // Préparation de la réponse
+            const userResponse = {
+                _id: user._id,
+                parentName: user.parentName,
+                email: user.email,
+                phoneNumber: user.phoneNumber,
+                address: user.address,
+                plan: user.plan,
+                children: user.children,
+                role: user.role
+            };
+
+            res.json({
+                msg: "Connexion réussie",
+                token: accessToken,
+                user: userResponse
+            });
+
+        } catch (err) {
+            console.error('Erreur lors de la connexion:', err);
+            return res.status(500).json({ msg: "Erreur serveur" });
+        }
+    },
+
+    logout: async (req, res) => {
+        try {
+            const refreshToken = req.cookies.refreshtoken;
+            if (!refreshToken) return res.status(400).json({ msg: "Pas de token trouvé" });
+
+            // Suppression du refresh token en base
+            const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+            await Users.findByIdAndUpdate(decoded.id, { $unset: { refreshToken: 1 } });
+
+            // Suppression du cookie
+            res.clearCookie('refreshtoken', { 
+                path: '/user/refresh_token',
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict'
+            });
+
+            return res.json({ msg: "Déconnexion réussie" });
+
+        } catch (err) {
+            console.error('Erreur lors de la déconnexion:', err);
+            return res.status(500).json({ msg: err.message });
+        }
+    },
+
+    refreshToken: async (req, res) => {
+        try {
+            const refreshToken = req.cookies.refreshtoken;
+            if (!refreshToken) return res.status(401).json({ msg: "Non authentifié" });
+
+            // Vérification du token
+            const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
             
-        },
-        token
-        
-        }    )
+            // Vérification que le token est toujours valide en base
+            const user = await Users.findOne({ 
+                _id: decoded.id, 
+                refreshToken 
+            });
+            
+            if (!user) return res.status(403).json({ msg: "Token invalide" });
+
+            // Génération d'un nouveau access token
+            const newAccessToken = createAccessToken({ id: user._id, role: user.role });
+
+            res.json({ token: newAccessToken });
 
         } catch (err) {
-            return res.status(500).json({msg: err.message})
+            console.error('Erreur lors du refresh token:', err);
+            return res.status(500).json({ msg: "Erreur d'authentification" });
         }
     },
-    logout: async (req, res) =>{
+
+    getUser: async (req, res) => {
         try {
-            res.clearCookie('refreshtoken', {path: '/user/refresh_token'})
-            return res.json({msg: "Logged out"})
+            const user = await Users.findById(req.user.id)
+                .select('-password -refreshToken');
+                
+            if (!user) return res.status(404).json({ msg: "Utilisateur non trouvé." });
+
+            res.json(user);
         } catch (err) {
-            return res.status(500).json({msg: err.message})
+            console.error('Erreur lors de la récupération du user:', err);
+            return res.status(500).json({ msg: "Erreur serveur" });
         }
     },
-    refreshToken: (req, res) =>{
+
+    getAllUsers: async (req, res) => {
         try {
-            const rf_token = req.cookies.refreshtoken;
-            if(!rf_token) return res.status(400).json({msg: "Please Login or Register"})
+            // Vérification du rôle admin
+            if (req.user.role !== 'admin') {
+                return res.status(403).json({ msg: "Accès non autorisé" });
+            }
 
-            jwt.verify(rf_token, process.env.REFRESH_TOKEN_SECRET, (err, user) =>{
-                if(err) return res.status(400).json({msg: "Please Login or Register"})
-
-                const accesstoken = createAccessToken({id: user.id})
-
-                res.json({accesstoken})
-            })
-
+            const users = await Users.find()
+                .select('-password -refreshToken');
+                
+            res.json(users);
         } catch (err) {
-            return res.status(500).json({msg: err.message})
-        }
-        
-    },
-    getUser: async (req, res) =>{
-        try {
-            const user = await Users.findById(req.user.id).select('-password')
-            if(!user) return res.status(400).json({msg: "User does not exist."})
-
-            res.json(user)
-        } catch (err) {
-            return res.status(500).json({msg: err.message})
+            console.error('Erreur lors de la récupération des users:', err);
+            return res.status(500).json({ msg: "Erreur serveur" });
         }
     },
-   
-  getAllUsers : async (req, res) => {
+
+    updateUser: async (req, res) => {
         try {
-          const users = await Users.find();
-          res.json(users);
+            const { id } = req.params;
+            const updateData = req.body;
+
+            // Vérification des permissions
+            if (req.user.id !== id && req.user.role !== 'admin') {
+                return res.status(403).json({ msg: "Non autorisé" });
+            }
+
+            // Exclusion des champs sensibles
+            delete updateData.password;
+            delete updateData.role;
+            delete updateData.refreshToken;
+
+            // Mise à jour
+            const updatedUser = await Users.findByIdAndUpdate(
+                id, 
+                updateData, 
+                { new: true, runValidators: true }
+            ).select('-password -refreshToken');
+
+            if (!updatedUser) {
+                return res.status(404).json({ msg: "Utilisateur non trouvé" });
+            }
+
+            res.json({
+                msg: "Mise à jour réussie",
+                user: updatedUser
+            });
+
         } catch (err) {
-          return res.status(500).json({ msg: err.message });
+            console.error('Erreur lors de la mise à jour:', err);
+            return res.status(500).json({ 
+                msg: err.message,
+                ...(err.errors && { errors: Object.values(err.errors).map(e => e.message) })
+            });
         }
-      },
- }
+    },
 
+    updateQuizScore: async (req, res) => {
+        try {
+            const { userId, category, score } = req.body;
 
-const createAccessToken = (user) =>{
-    return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '11m'})
-}
-const createRefreshToken = (user) =>{
-    return jwt.sign(user, process.env.REFRESH_TOKEN_SECRET, {expiresIn: '7d'})
-}
+            // Vérification des permissions
+            if (req.user.id !== userId && req.user.role !== 'admin') {
+                return res.status(403).json({ msg: "Non autorisé" });
+            }
 
-module.exports = userCtrl
+            // Mise à jour du score
+            const user = await Users.findById(userId);
+            if (!user) return res.status(404).json({ msg: "Utilisateur non trouvé." });
 
+            let quizScore = user.quizScores.find(s => s.category === category);
+            if (!quizScore) {
+                quizScore = { category, firstScore: score, bestScore: score };
+                user.quizScores.push(quizScore);
+            } else {
+                if (quizScore.firstScore === 0) {
+                    quizScore.firstScore = score;
+                }
+                if (score > quizScore.bestScore) {
+                    quizScore.bestScore = score;
+                }
+            }
+
+            await user.save();
+
+            res.json({
+                msg: "Score mis à jour",
+                quizScores: user.quizScores
+            });
+
+        } catch (err) {
+            console.error('Erreur lors de la mise à jour du score:', err);
+            return res.status(500).json({ msg: "Erreur serveur" });
+        }
+    }
+};
+
+// Helper functions
+const createAccessToken = (payload) => {
+    return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
+};
+
+const createRefreshToken = (payload) => {
+    return jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+};
+
+module.exports = userCtrl;

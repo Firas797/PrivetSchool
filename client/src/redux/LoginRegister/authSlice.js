@@ -43,7 +43,6 @@ const authSlice = createSlice({
     token: localStorage.getItem('token') || null,
     loading: false,
     error: null,
-    childClass: null, // Add this field to store the child class
 
     isLogedIn:false,
     allUsers: [],
@@ -70,7 +69,6 @@ const authSlice = createSlice({
         state.user = action.payload;
         state.token = localStorage.getItem('token'); // Update token from localStorage
         state.isLogedIn = true;
-        state.childClass = action.payload.classChild; // Store the child class
         toast.info('Logging in...');
 
       })

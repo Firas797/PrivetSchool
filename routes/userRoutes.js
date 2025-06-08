@@ -15,6 +15,8 @@ router.get('/infor', auth,  userCtrl.getUser)
 
 router.get('/all_users', userCtrl.getAllUsers);
 
+router.post('/update_quiz_score', auth, userCtrl.updateQuizScore); // Update quiz scores
+
 
 
 
