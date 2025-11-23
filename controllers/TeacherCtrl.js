@@ -1,6 +1,7 @@
 const Teacher = require("../models/TeacherModel"); // Import the Teacher model
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const Users = require("../models/userModel"); // 👈 add this
 
 const teacherCtrl = {
   register: async (req, res) => {
@@ -72,6 +73,7 @@ const teacherCtrl = {
           name: teacher.name,
           email: teacher.email,
           role: teacher.role,
+          class : teacher.classes,
           subject: teacher.subject
         },
         token: accessToken
@@ -162,7 +164,26 @@ res.json(teachers);
       return res.status(500).json({ msg: err.message });
     }
   },
-  
+  getStudentsByClasses: async (req, res) => {
+  try {
+    const teacherId = req.query.teacherId; // 👈 get it from query
+    if (!teacherId) return res.status(400).json({ msg: "teacherId missing" });
+
+    const teacher = await Teacher.findById(teacherId);
+    if (!teacher) return res.status(404).json({ msg: "Teacher not found" });
+
+    const teacherClasses = teacher.classes; // ["2","3"]
+
+    const students = await Users.find({
+      "children.class": { $in: teacherClasses }
+    }).select('-password -refreshToken');
+
+    res.json(students);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Server error" });
+  }
+},
   
    deleteTeacher : async (req, res) => {
     try {

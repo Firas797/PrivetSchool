@@ -10,5 +10,6 @@ module.exports = DBConnect = async () =>{
         if(err) throw err;
         console.log('Connected to MongoDB')
     })
+mongoose.set('strictQuery', true); // or false depending on your preference
 
 }

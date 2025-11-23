@@ -1,26 +1,46 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
-import { toast } from 'react-toastify'; // Import react-toastify
+import { toast } from 'react-toastify';
 
-export const fetchCourses = createAsyncThunk('courses/fetchCourses', async (_, { rejectWithValue }) => {
-  try {
-    const response = await axios.get('/api/getAllCourses');
-    return response.data;
-  } catch (error) {
-    return rejectWithValue(error.response.data);
+// Fetch all courses
+export const fetchCourses = createAsyncThunk(
+  'courses/fetchCourses',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get('/api/courses'); // backend route
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { msg: error.message });
+    }
   }
-});
+);
 
-export const addCourseAsync = createAsyncThunk('courses/addCourse', async (courseData, { rejectWithValue }) => {
-  try {
-    const response = await axios.post('/api/createCourse', courseData);
-    toast.success('Course added successfully'); // Show success toast
-    return response.data.course;
-  } catch (error) {
-    toast.error('Failed to add course'); // Show error toast
-    return rejectWithValue(error.response.data);
+// Add a new course
+export const addCourseAsync = createAsyncThunk(
+  'courses/addCourse',
+  async (courseData, { rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      formData.append('Title', courseData.Title);
+      formData.append('classe', courseData.classe);
+      formData.append('description', courseData.description);
+      formData.append('category', courseData.category);
+
+      if (courseData.urlVid) formData.append('urlVid', courseData.urlVid);
+      if (courseData.pdfFile) formData.append('pdfFile', courseData.pdfFile);
+
+      const response = await axios.post('/api/courses/createCourse', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      toast.success('Course added successfully');
+      return response.data.course;
+    } catch (error) {
+      toast.error('Failed to add course');
+      return rejectWithValue(error.response?.data || { msg: error.message });
+    }
   }
-});
+);
 
 const initialState = {
   courses: [],
@@ -31,9 +51,7 @@ const initialState = {
 const courseSlice = createSlice({
   name: 'courses',
   initialState,
-  reducers: {
-    // Your existing reducers
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
       .addCase(fetchCourses.pending, (state) => {
@@ -42,7 +60,6 @@ const courseSlice = createSlice({
       })
       .addCase(fetchCourses.fulfilled, (state, action) => {
         state.loading = false;
-        state.error = null;
         state.courses = action.payload;
       })
       .addCase(fetchCourses.rejected, (state, action) => {
@@ -55,7 +72,6 @@ const courseSlice = createSlice({
       })
       .addCase(addCourseAsync.fulfilled, (state, action) => {
         state.loading = false;
-        state.error = null;
         state.courses.push(action.payload);
       })
       .addCase(addCourseAsync.rejected, (state, action) => {

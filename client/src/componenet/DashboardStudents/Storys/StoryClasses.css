@@ -1,0 +1,140 @@
+.story-classes-container {
+  direction: rtl;
+  padding: 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
+}
+
+.story-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 15px;
+  overflow: hidden;
+  background: white;
+}
+
+.story-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.language-badge {
+  direction: ltr;
+}
+
+.card-title {
+  font-weight: bold;
+  font-size: 1.1rem;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+}
+
+.card-text {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.btn {
+  font-weight: bold;
+  border-radius: 25px;
+  padding: 8px 20px;
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  transform: scale(1.05);
+}
+
+/* Class Selector Styles */
+.class-selector-section {
+  background: white;
+  border-radius: 15px;
+}
+
+.class-selector {
+  border-radius: 10px;
+  border: 2px solid #e9ecef;
+  padding: 10px;
+  font-size: 1rem;
+}
+
+.class-selector:focus {
+  border-color: #4ECDC4;
+  box-shadow: 0 0 0 0.2rem rgba(78, 205, 196, 0.25);
+}
+
+.selection-info {
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  border-right: 4px solid #4ECDC4;
+}
+
+.stories-counter {
+  text-align: center;
+}
+
+.stories-counter .badge {
+  font-size: 1rem;
+  padding: 10px 20px;
+  border-radius: 20px;
+}
+
+.empty-state {
+  padding: 40px;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* Modal Styles */
+.modal-content {
+  border-radius: 15px;
+  border: none;
+}
+
+.modal-header {
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+}
+
+.modal-body {
+  font-size: 1.1rem;
+  font-family: 'Arial', sans-serif;
+}
+
+.modal-body p {
+  margin-bottom: 1rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .story-classes-container {
+    padding: 10px;
+  }
+  
+  .col-sm-12 {
+    margin-bottom: 15px;
+  }
+  
+  .modal-body {
+    font-size: 1rem;
+  }
+  
+  .class-selector-section .row {
+    text-align: center;
+  }
+  
+  .selection-info {
+    margin-top: 15px;
+  }
+}
+
+/* Arabic text styling */
+[dir="rtl"] {
+  text-align: right;
+}
+
+[dir="ltr"] {
+  text-align: left;
+}

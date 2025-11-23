@@ -1,97 +1,88 @@
-const fs = require('fs'); // Node.js file system module
-const path = require('path'); // Node.js path module
-const multer = require('multer'); // For handling file uploads
-const HomeWork = require('./../models/Hw'); // Update the path to your model
-
-const storage = multer.memoryStorage(); // Store file as Buffer in memory
-
+const HomeWork = require('../models/Hw');
 
 const HwCtrl = {
-    createHw: async (req, res) => {
-        try {
-            const { Title, classe,  description, category } = req.body;
+  // Create a new homework
+  createHw: async (req, res) => {
+    try {
+      const { title, classe, description, category } = req.body;
 
-            const newHw = new HomeWork({
-                Title,
-                classe,
-                description,
-                category,
-                pdfFile: req.file ? req.file.path : '' // Store the file path
-            });
+      const newHw = new HomeWork({
+        title,
+        classe,
+        description,
+        category,
+        pdfFile: req.file ? req.file.path : ''
+      });
 
-            await newHw.save();
-
-            res.status(201).json({ msg: 'Course created successfully', course: newHw });
-        } catch (err) {
-            return res.status(500).json({ msg: err.message });
-        }
-    },
-   
-
-    getAllHw: async (req, res) => {
-        try {
-            const HomeWork = await HomeWork.find();
-            res.json(HomeWork);
-        } catch (err) {
-            return res.status(500).json({ msg: err.message });
-        }
-    },
-
-    getHwById: async (req, res) => {
-        try {
-            const HomeWork = await HomeWork.findById(req.params.id);
-            if (!course) {
-                return res.status(404).json({ msg: 'Course not found' });
-            }
-            res.json(HomeWork);
-        } catch (err) {
-            return res.status(500).json({ msg: err.message });
-        }
-    },
-
-    updateHw: async (req, res) => {
-        try {
-            const { Title,  classe,  description, category } = req.body;
-
-            const updatedCourse = {
-                Title,
-                classe,
-                description,
-                category
-            };
-
-            if (req.file) {
-                updatedCourse.pdfFile = {
-                    data: req.file.buffer,
-                    contentType: req.file.mimetype
-                };
-            }
-
-            const course = await Courses.findByIdAndUpdate(req.params.id, updatedCourse, { new: true });
-
-            if (!course) {
-                return res.status(404).json({ msg: 'Course not found' });
-            }
-
-            res.json({ msg: 'Course updated successfully', course });
-        } catch (err) {
-            return res.status(500).json({ msg: err.message });
-        }
-    },
-
-    deleteHw: async (req, res) => {
-        try {
-            const HomeWork = await HomeWork.findByIdAndDelete(req.params.id);
-
-            if (!HomeWork) {
-                return res.status(404).json({ msg: 'Course not found' });
-            }
-
-            res.json({ msg: 'Course deleted successfully' });
-        } catch (err) {
-            return res.status(500).json({ msg: err.message });
-        }
+      await newHw.save();
+      res.status(201).json({ msg: 'Homework created successfully', homeWork: newHw });
+    } catch (err) {
+      console.error('Error creating homework:', err);
+      return res.status(500).json({ msg: err.message });
     }
+  },
+
+  // Get all homeworks
+  getAllHw: async (req, res) => {
+    try {
+      const homeworks = await HomeWork.find();
+      res.json(homeworks);
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+
+  // Get homework by ID
+  getHwById: async (req, res) => {
+    try {
+      const homework = await HomeWork.findById(req.params.id);
+      if (!homework) {
+        return res.status(404).json({ msg: 'Homework not found' });
+      }
+      res.json(homework);
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+
+  // Update homework
+  updateHw: async (req, res) => {
+    try {
+      const { title, classe, description, category } = req.body;
+
+      const updatedHw = { title, classe, description, category };
+      if (req.file) updatedHw.pdfFile = req.file.path;
+
+      const homework = await HomeWork.findByIdAndUpdate(req.params.id, updatedHw, { new: true });
+      if (!homework) return res.status(404).json({ msg: 'Homework not found' });
+
+      res.json({ msg: 'Homework updated successfully', homeWork: homework });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+
+  // Delete homework
+  deleteHw: async (req, res) => {
+    try {
+      const homework = await HomeWork.findByIdAndDelete(req.params.id);
+      if (!homework) return res.status(404).json({ msg: 'Homework not found' });
+
+      res.json({ msg: 'Homework deleted successfully' });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+
+  // ✅ Get homeworks by class number
+  getHwByClass: async (classNumber) => {
+    try {
+      const homeworks = await HomeWork.find({ classe: classNumber });
+      return homeworks;
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
 };
 
 module.exports = HwCtrl;

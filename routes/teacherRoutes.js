@@ -13,6 +13,7 @@ router.get('/refresh_token', teacherCtrl.refreshToken);
 router.get('/getTeachers',  teacherCtrl.getTeacher);
 router.get('/getAllTeachers',  teacherCtrl.getAllTeachers);
 
+router.get('/students',  teacherCtrl.getStudentsByClasses);
 
 
 router.put('/UpdateTeacher/:id', teacherCtrl.updateTeacher);

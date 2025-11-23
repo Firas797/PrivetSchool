@@ -1,0 +1,375 @@
+/* StudentExams.css - Clean Modern Design */
+.student-exams-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 0;
+}
+
+.student-exams-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+/* Header Styles */
+.student-exams-content header {
+  text-align: center;
+  margin-bottom: 3rem;
+  color: white;
+}
+
+.student-exams-content h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #fff 0%, #e0e7ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.student-info {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.student-info > div {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-weight: 600;
+  color: white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Filter Section */
+.filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+  flex-wrap: wrap;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(15px);
+  padding: 1.5rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.filters input {
+  flex: 1;
+  min-width: 250px;
+  padding: 0.875rem 1rem;
+  border: none;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.filters input:focus {
+  outline: none;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.3);
+  transform: translateY(-2px);
+}
+
+.filters input::placeholder {
+  color: #6b7280;
+}
+
+.filters select {
+  padding: 0.875rem 1rem;
+  border: none;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  min-width: 150px;
+}
+
+.filters select:focus {
+  outline: none;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.3);
+}
+
+/* Exams Grid */
+.exams-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.exam-card {
+  background: white;
+  border-radius: 20px;
+  padding: 0;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+  position: relative;
+}
+
+.exam-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.exam-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.exam-head {
+  padding: 1.5rem 1.5rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.exam-head h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.exam-head > div {
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.exam-body {
+  padding: 1rem 1.5rem;
+}
+
+.exam-body p {
+  color: #475569;
+  line-height: 1.6;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.exam-actions {
+  padding: 1.25rem 1.5rem;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.exam-actions button {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  flex-shrink: 0;
+}
+
+.exam-actions button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.exam-actions button:active {
+  transform: translateY(0);
+}
+
+.exam-actions span {
+  color: #94a3b8;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+.exam-actions small {
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* Loading State */
+.student-exams-content > div:not(.exams-grid):not(.filters):not(header) {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  margin: 2rem 0;
+}
+
+.student-exams-content > div:not(.exams-grid):not(.filters):not(header) h3 {
+  color: #1e293b;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.student-exams-content > div:not(.exams-grid):not(.filters):not(header) p {
+  color: #64748b;
+  line-height: 1.6;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+/* Loading Animation */
+.student-exams-content > div:contains("جاري التحميل") {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.student-exams-content > div:contains("جاري التحميل")::before {
+  content: '';
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f1f5f9;
+  border-top: 3px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Error State */
+.student-exams-content > div:contains("خطأ") {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+/* Empty State */
+.student-exams-content > div:contains("لا يوجد امتحانات") {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .student-exams-content {
+    padding: 1.5rem 1rem;
+  }
+
+  .student-exams-content h1 {
+    font-size: 2rem;
+  }
+
+  .exams-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .filters {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .filters input {
+    min-width: 100%;
+  }
+
+  .student-info {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .student-info > div {
+    width: 100%;
+    text-align: center;
+    max-width: 250px;
+  }
+
+  .exam-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .exam-actions button {
+    width: 100%;
+  }
+
+  .exam-actions small {
+    align-self: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .student-exams-content {
+    padding: 1rem 0.75rem;
+  }
+
+  .student-exams-content h1 {
+    font-size: 1.75rem;
+  }
+
+  .exam-card {
+    margin: 0 0.25rem;
+  }
+
+  .exam-head,
+  .exam-body,
+  .exam-actions {
+    padding: 1.25rem 1rem;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .student-exams-container {
+    background: linear-gradient(135deg, #4c51bf 0%, #7e22ce 100%);
+  }
+}
+
+/* High contrast support */
+@media (prefers-contrast: high) {
+  .exam-card {
+    border: 2px solid #000;
+  }
+  
+  .filters input,
+  .filters select {
+    border: 2px solid #000;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .exam-card,
+  .exam-actions button,
+  .filters input,
+  .filters select {
+    transition: none;
+  }
+  
+  .exam-card:hover {
+    transform: none;
+  }
+}

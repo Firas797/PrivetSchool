@@ -1,23 +1,21 @@
 const express = require('express');
 const router = express.Router();
-const courseCtrl = require('../controllers/coursCtrl'); // Update the path to your controller
-const upload = require('../middleware/multer'); // Update the path to your middleware
+const courseCtrl = require('../controllers/coursCtrl');
+const upload = require('../middleware/multer');
 
-// Set up multer for file upload
-
-// Create a new course
+// ✅ Create a new course (PDF optional)
 router.post('/createCourse', upload.single('pdfFile'), courseCtrl.createCourse);
 
-// Get all courses
+// ✅ Get all courses
 router.get('/', courseCtrl.getAllCourses);
 
-// Get a specific course by ID
+// ✅ Get one course by ID
 router.get('/:id', courseCtrl.getCourseById);
 
-// Update a course by ID
+// ✅ Update course (PDF optional)
 router.put('/:id', upload.single('pdfFile'), courseCtrl.updateCourse);
 
-// Delete a course by ID
+// ✅ Delete course
 router.delete('/:id', courseCtrl.deleteCourse);
 
 module.exports = router;

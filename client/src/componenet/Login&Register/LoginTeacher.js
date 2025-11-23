@@ -25,7 +25,7 @@ function LoginTeach() {
     dispatch(loginTeacher({ email, password }));
     setEmail('');
     setPassword('');
-    navigate('/dashboardTeacher'); // Navigate to '/'
+    navigate('/Teacher'); // Navigate to '/'
 
   };
   return (

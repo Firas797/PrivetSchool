@@ -1,38 +1,71 @@
 import React from 'react';
 import './Side.css';
+import { FaChalkboardTeacher, FaUserGraduate, FaUserPlus } from 'react-icons/fa';
 
-function SideBarAdmin(props) {
-  const { activePage, handlePageChange } = props;
-
+function SideBarAdmin({ activePage, handlePageChange }) {
   return (
     <aside className="sidebar">
-      <h1 className='title-sideBar'>* Profes</h1>
-      
-      <ul className="nav-links">
-        <li className={activePage === 'C_teachers' ? 'active' : ''}>
-          <button onClick={() => handlePageChange('C_teachers')}>- Création des profs</button>
-        </li>
-       
-        <li className={activePage === 'L_teachers' ? 'active' : ''}>
-          <button onClick={() => handlePageChange('L_teachers')}>- Liste des profs</button>
-        </li>
+      <div className="sidebar-header">
+        <h2 className="sidebar-title">📘 Admin Panel</h2>
+      </div>
 
-      </ul>
-      <br/>
-      <h1 className='title-sideBar'>* Etudients</h1>
-      
-      <ul className="nav-links">
-      
-        <li className={activePage === 'L_Students' ? 'active' : ''}>
-          <button onClick={() => handlePageChange('L_Students')}>- Liste des Etudiants </button>
-        </li>
-        
+      <div className="sidebar-section">
+        <h3 className="sidebar-section-title">Professeurs</h3>
+        <ul className="nav-links">
+          <li className={activePage === 'C_teachers' ? 'active' : ''}>
+            <button onClick={() => handlePageChange('C_teachers')}>
+              <FaChalkboardTeacher className="icon" /> Création des professeurs
+            </button>
+          </li>
+          <li className={activePage === 'L_teachers' ? 'active' : ''}>
+            <button onClick={() => handlePageChange('L_teachers')}>
+              <FaChalkboardTeacher className="icon" /> Liste des professeurs
+            </button>
+          </li>
+        </ul>
+      </div>
 
-      </ul>
-      <br/>
-      <h1 className='title-sideBar'>* Manage</h1>
+      <div className="sidebar-section">
+        <h3 className="sidebar-section-title">Étudiants</h3>
+        <ul className="nav-links">
+          <li className={activePage === 'L_Students' ? 'active' : ''}>
+            <button onClick={() => handlePageChange('L_Students')}>
+              <FaUserGraduate className="icon" /> Liste des étudiants
+            </button>
+          </li>
+        </ul>
+      </div>
 
-      
+      <div className="sidebar-section">
+        <h3 className="sidebar-section-title">Inscriptions</h3>
+        <ul className="nav-links">
+          <li className={activePage === 'L_NewUsers' ? 'active' : ''}>
+            <button onClick={() => handlePageChange('L_NewUsers')}>
+              <FaUserPlus className="icon" /> Nouveaux inscrits
+            </button>
+          </li>
+        </ul>
+      </div>
+        <div className="sidebar-section">
+        <h3 className="sidebar-section-title">Emploi du temps</h3>
+        <ul className="nav-links">
+          <li className={activePage === 'L_NewUsers' ? 'active' : ''}>
+            <button onClick={() => handlePageChange('L_Emploi')}>
+              <FaUserPlus className="icon" /> Ajouter Emploi
+            </button>
+          </li>
+        </ul>
+      </div>
+      <div className="sidebar-section">
+        <h3 className="sidebar-section-title">Evenement</h3>
+        <ul className="nav-links">
+          <li className={activePage === 'L_NewUsers' ? 'active' : ''}>
+            <button onClick={() => handlePageChange('L_Events')}>
+              <FaUserPlus className="icon" /> Creé evenement
+            </button>
+          </li>
+        </ul>
+      </div>
     </aside>
   );
 }

@@ -1,176 +1,110 @@
-@import url("https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,300,600");
-
-body {
-  font-family: "Lato", sans-serif;
-  font-size: 100%;
-  overflow-y: scroll;
-  -ms-text-size-adjust: 100%;
-  -webkit-text-size-adjust: 100%;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-  background-color: #fefefe;
-}
-
-.teachersS{
-  padding-left: 350px;
-}
-
-
-a {
-  text-decoration: none;
-  transition: all 0.6s ease;
-}
-
-a:hover {
-  transition: all 0.6s ease;
-}
-
-.app {
+/* Main wrapper */
+.sideBarPad {
+  display: flex;
   height: 100vh;
-}
-.title-sideBar{
-  font-size: 30px;
-  color: rgb(168, 161, 161);
+  width: 100%;
+  overflow: hidden;
+  font-family: 'Poppins', sans-serif;
 }
 
-/* Sidebar */
+/* Sidebar style */
 .sidebar {
-  position: absolute;
-  width: 40em;
-  height:1500px;
-  padding-right: 400px;
-  margin-right: 20px;
-  top: 0;
-  overflow: hidden;
-  background-color: #19222a;
-  transform: translateZ(0);
-  visibility: visible;
-  backface-visibility: hidden;
-}
-.sideBarPad{
-  justify-content: space-around;
-padding-right: 20px;
-}
-
-.sidebar header {
-  background-color: #09f;
-  width: 100%;
-  display: block;
-  padding: 0.75em 1em;
-}
-
-/* Sidebar Nav */
-.sidebar-nav {
-  position: fixed;
-  background-color: #19222a;
-  height: 100%;
-  font-weight: 400;
-  font-size: 1.2em;
-  overflow: auto;
-  padding-bottom: 6em;
-  z-index: 9;
-  overflow: hidden;
-  -webkit-overflow-scrolling: touch;
-}
-
-.sidebar-nav ul {
-  list-style: none;
-  display: block;
-  padding: 0;
-  margin: 0;
-}
-
-.sidebar-nav li {
-  margin-left: 0;
-  padding-left: 0;
-  width: 100%;
-  display: inline-block;
-}
-
-.sidebar-nav a {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 0.75em;
-  padding: 1.05em 1em;
-  position: relative;
-  display: block;
-}
-
-.sidebar-nav a:hover {
-  background-color: rgba(0, 0, 0, 0.9);
-  transition: all 0.6s ease;
-}
-
-.sidebar-nav i {
-  font-size: 1.8em;
-  padding-right: 0.5em;
-  width: 9em;
-  display: inline;
-  vertical-align: middle;
-}
-
-.sidebar-nav > ul > li > a:after {
-  content: '\f125';
-  font-family: ionicons;
-  font-size: 0.5em;
-  width: 10px;
+  width: 300px;
+  min-width: 250px;
+  background-color: #1e1e2f;
   color: #fff;
-  position: absolute;
-  right: 0.75em;
-  top: 45%;
-}
-
-/* Nav-Flyout */
-.sidebar .nav-flyout {
-  position: absolute;
-  background-color: #080D11;
-  z-index: 9;
-  left: 2.5em;
-  top: 0;
   height: 100vh;
-  transform: translateX(100%);
-  transition: all 0.5s ease;
+  position: fixed; /* stays fixed while scrolling */
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 25px 15px;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
 }
 
-.sidebar .nav-flyout a:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+/* Sidebar title */
+.sidebar h2 {
+  text-align: center;
+  font-size: 1.4rem;
+  margin-bottom: 30px;
+  letter-spacing: 1px;
+  color: #00d4ff;
 }
 
-/* Hover */
-.sidebar-nav ul > li:hover .nav-flyout {
-  transform: translateX(0);
-  transition: all 0.5s ease;
-}
-.sidebar {
-  width: 200px;
-  background-color: #333;
-  padding: 10px;
-}
-
-.nav-links {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.nav-links li {
-  margin: 0;
-}
-
-.nav-links button {
-  color: #fff;
+/* Sidebar buttons */
+.sidebar button {
   background: none;
   border: none;
-  cursor: pointer;
-  padding: 8px 16px;
-  width: 100%;
+  color: #ccc;
   text-align: left;
+  padding: 12px 15px;
+  font-size: 1rem;
+  cursor: pointer;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s ease-in-out;
 }
 
-.nav-links button:hover {
-  background-color: #4bc0e5;
+.sidebar button:hover {
+  background-color: #2d2d44;
+  color: #00d4ff;
 }
 
-.nav-links .active button {
-  background-color: #4bc0e5;
+/* Highlight active button */
+.sidebar button.active {
+  background-color: #00d4ff;
+  color: #fff;
+}
+
+/* Main content area */
+.content {
+  flex: 1;
+  margin-left: 250px; /* push content to the right of sidebar */
+  background-color: #f5f6fa;
+  padding: 40px;
+  height: 100vh;
+  overflow-y: auto;
+  transition: all 0.3s ease;
+}
+
+/* Inner components (AllTeachers, ListStudents, etc.) */
+.teachersS {
+  background: #fff;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+  height: fit-content;
+}
+
+/* Responsive layout */
+@media (max-width: 900px) {
+  .sidebar {
+    width: 200px;
+  }
+
+  .content {
+    margin-left: 200px;
+    padding: 25px;
+  }
+}
+
+@media (max-width: 700px) {
+  .sidebar {
+    position: absolute;
+    left: -250px;
+    transition: all 0.3s ease;
+  }
+
+  .sidebar.open {
+    left: 0;
+  }
+
+  .content {
+    margin-left: 0;
+    padding: 20px;
+  }
 }

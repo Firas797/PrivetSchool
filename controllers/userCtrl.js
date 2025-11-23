@@ -1,85 +1,189 @@
 const Users = require("../models/userModel");
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const fs = require('fs')
+const path = require('path')
 
 const userCtrl = {
-    register: async (req, res) => {
-        try {
-            const { parentName, email, password, phoneNumber, address, plan, children } = req.body;
 
-            // Validation des données
-            if (!parentName || !email || !password || !phoneNumber || !address || !plan || !children) {
-                return res.status(400).json({ msg: "Tous les champs sont obligatoires" });
-            }
+updateProfilePicture: async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ msg: "No file uploaded" });
+    }
 
-            if (children.length === 0) {
-                return res.status(400).json({ msg: "Au moins un enfant doit être enregistré" });
-            }
+    const user = await Users.findById(req.user._id);
+    if (!user) return res.status(404).json({ msg: "User not found" });
 
-            const user = await Users.findOne({ email });
-            if (user) return res.status(400).json({ msg: "Cet email est déjà utilisé." });
+    // Delete old profile picture if exists
+    if (user.profilePicture) {
+      const oldImagePath = path.join(__dirname, '..', user.profilePicture);
+      if (fs.existsSync(oldImagePath)) {
+        fs.unlinkSync(oldImagePath);
+      }
+    }
 
-            if (password.length < 6) {
-                return res.status(400).json({ msg: "Le mot de passe doit contenir au moins 6 caractères." });
-            }
+    // Update user with new profile picture path
+    user.profilePicture = req.file.path;
+    await user.save();
 
-            // Création du nouvel utilisateur
-            const newUser = new Users({
-                parentName,
-                email,
-                password,
-                phoneNumber,
-                address,
-                plan,
-                children
-            });
+    res.json({
+      msg: "Profile picture updated successfully",
+      profilePicture: user.profilePicture
+    });
 
-            // Sauvegarde en base de données
-            await newUser.save();
+  } catch (err) {
+    console.error('Error updating profile picture:', err);
+    return res.status(500).json({ msg: "Server error" });
+  }
+},
 
-            // Génération des tokens
-            const accessToken = createAccessToken({ id: newUser._id, role: newUser.role });
-            const refreshToken = createRefreshToken({ id: newUser._id, role: newUser.role });
+updateChildProfilePicture: async (req, res) => {
+  try {
+    const { childId } = req.params;
+    
+    if (!req.file) {
+      return res.status(400).json({ msg: "No file uploaded" });
+    }
 
-            // Stockage du refresh token en base
-            await Users.findByIdAndUpdate(newUser._id, { refreshToken });
+    // Check authentication
+    // if (!req.user || !req.user.id) {
+    //   return res.status(401).json({ msg: "User not authenticated" });
+    // }
 
-            // Configuration du cookie
-            res.cookie("refreshtoken", refreshToken, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict',
-                path: "/user/refresh_token",
-                maxAge: 7 * 24 * 60 * 60 * 1000 // 7 jours
-            });
+    // Find user and update in one operation
+    const user = await Users.findOne({ _id: req.user.id });
+    if (!user) return res.status(404).json({ msg: "User not found" });
 
-            // Réponse avec les données utilisateur (sans mot de passe)
-            const userResponse = {
-                _id: newUser._id,
-                parentName: newUser.parentName,
-                email: newUser.email,
-                phoneNumber: newUser.phoneNumber,
-                address: newUser.address,
-                plan: newUser.plan,
-                children: newUser.children,
-                role: newUser.role,
-                createdAt: newUser.createdAt
-            };
+    // Find the child
+    const child = user.children.id(childId); // Use Mongoose's id() method
+    if (!child) {
+      // Fallback: try with find
+      const childAlt = user.children.find(c => c._id.toString() === childId);
+      if (!childAlt) return res.status(404).json({ msg: "Child not found" });
+      
+      // Delete old picture if exists
+      if (childAlt.profilePicture) {
+        const oldImagePath = path.join(__dirname, '..', childAlt.profilePicture);
+        if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
+      }
+      
+      // Update the child
+      childAlt.profilePicture = req.file.path;
+      await user.save();
+      
+      return res.json({
+        msg: "Child profile picture updated successfully",
+        profilePicture: req.file.path,
+        childId: childId
+      });
+    }
 
-            res.status(201).json({
-                msg: "Inscription réussie",
-                token: accessToken,
-                user: userResponse
-            });
+    // Delete old profile picture if exists
+    if (child.profilePicture) {
+      const oldImagePath = path.join(__dirname, '..', child.profilePicture);
+      if (fs.existsSync(oldImagePath)) {
+        fs.unlinkSync(oldImagePath);
+      }
+    }
 
-        } catch (err) {
-            console.error('Erreur lors de l\'inscription:', err);
-            return res.status(500).json({ 
-                msg: err.message,
-                ...(err.errors && { errors: Object.values(err.errors).map(e => e.message) })
-            });
-        }
-    },
+    // Update the child
+    child.profilePicture = req.file.path;
+    await user.save();
+
+    res.json({
+      msg: "Child profile picture updated successfully",
+      profilePicture: req.file.path,
+      childId: childId
+    });
+
+  } catch (err) {
+    console.error('Error updating child profile picture:', err);
+    return res.status(500).json({ msg: "Server error" });
+  }
+},
+register: async (req, res) => {
+  try {
+    const { parentName, email, password, phoneNumber, address, children } = req.body;
+
+    // Validation des données
+    if (!parentName || !email || !password || !phoneNumber || !address || !children) {
+      return res.status(400).json({ msg: "Tous les champs sont obligatoires" });
+    }
+
+    if (children.length === 0) {
+      return res.status(400).json({ msg: "Au moins un enfant doit être enregistré" });
+    }
+
+    const user = await Users.findOne({ email });
+    if (user) return res.status(400).json({ msg: "Cet email est déjà utilisé." });
+
+    if (password.length < 6) {
+      return res.status(400).json({ msg: "Le mot de passe doit contenir au moins 6 caractères." });
+    }
+
+    // Exemple d'utilisation de la classe du premier enfant :
+    const firstChildClass = children[0].class;
+    console.log(`Classe du premier enfant: ${firstChildClass}`);
+
+    // Création du nouvel utilisateur
+    const newUser = new Users({
+      parentName,
+      email,
+      password,
+      phoneNumber,
+      address,
+      children,
+        isNewUser: true
+
+    });
+
+    // Sauvegarde en base de données
+    await newUser.save();
+
+    // Génération des tokens
+    const accessToken = createAccessToken({ id: newUser._id, role: newUser.role });
+    const refreshToken = createRefreshToken({ id: newUser._id, role: newUser.role });
+
+    // Stockage du refresh token en base
+    await Users.findByIdAndUpdate(newUser._id, { refreshToken });
+
+    // Configuration du cookie
+    res.cookie("refreshtoken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: "/user/refresh_token",
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 jours
+    });
+
+    // Réponse avec les données utilisateur (sans mot de passe)
+    const userResponse = {
+      _id: newUser._id,
+      parentName: newUser.parentName,
+      email: newUser.email,
+      phoneNumber: newUser.phoneNumber,
+      address: newUser.address,
+      children: newUser.children,
+      role: newUser.role,
+      createdAt: newUser.createdAt
+    };
+
+    res.status(201).json({
+      msg: "Inscription réussie",
+      token: accessToken,
+      user: userResponse
+    });
+
+  } catch (err) {
+    console.error('Erreur lors de l\'inscription:', err);
+    return res.status(500).json({ 
+      msg: err.message,
+      ...(err.errors && { errors: Object.values(err.errors).map(e => e.message) })
+    });
+  }
+},
+
 
     login: async (req, res) => {
         try {
@@ -186,27 +290,39 @@ const userCtrl = {
             return res.status(500).json({ msg: "Erreur d'authentification" });
         }
     },
+ getUser: async (req, res) => {
+    try {
+      const user = await Users.findById(req.user.id).select('-password -refreshToken');
+      if (!user) return res.status(404).json({ msg: "Utilisateur non trouvé." });
+      res.json(user);
+    } catch (err) {
+      console.error('Erreur lors de la récupération du user:', err);
+      return res.status(500).json({ msg: "Erreur serveur" });
+    }
+  },
+   getNewUsers: async (req, res) => {
+    try {
+      // if (req.user.role !== 'admin') {
+      //   return res.status(403).json({ msg: "Accès non autorisé" });
+      // }
 
-    getUser: async (req, res) => {
-        try {
-            const user = await Users.findById(req.user.id)
-                .select('-password -refreshToken');
-                
-            if (!user) return res.status(404).json({ msg: "Utilisateur non trouvé." });
+      const newUsers = await Users.find({ isNewUser: true })
+        .select('-password -refreshToken')
+        .sort({ createdAt: -1 });
 
-            res.json(user);
-        } catch (err) {
-            console.error('Erreur lors de la récupération du user:', err);
-            return res.status(500).json({ msg: "Erreur serveur" });
-        }
-    },
+      res.json(newUsers);
+    } catch (err) {
+      console.error('Erreur lors de la récupération des nouveaux users:', err);
+      return res.status(500).json({ msg: "Erreur serveur" });
+    }
+  },
 
     getAllUsers: async (req, res) => {
         try {
             // Vérification du rôle admin
-            if (req.user.role !== 'admin') {
-                return res.status(403).json({ msg: "Accès non autorisé" });
-            }
+            // if (req.user.role !== 'admin') {
+            //     return res.status(403).json({ msg: "Accès non autorisé" });
+            // }
 
             const users = await Users.find()
                 .select('-password -refreshToken');
@@ -257,6 +373,22 @@ const userCtrl = {
             });
         }
     },
+     markUserAsSeen: async (req, res) => {
+    try {
+      // if (req.user.role !== 'admin') {
+      //   return res.status(403).json({ msg: "Accès non autorisé" });
+      // }
+
+      const { id } = req.params;
+      const updatedUser = await Users.findByIdAndUpdate(id, { isNewUser: false }, { new: true });
+      if (!updatedUser) return res.status(404).json({ msg: "Utilisateur non trouvé" });
+
+      res.json({ msg: "Utilisateur marqué comme vu", user: updatedUser });
+    } catch (err) {
+      console.error('Erreur lors du marquage:', err);
+      return res.status(500).json({ msg: "Erreur serveur" });
+    }
+  },
 
     updateQuizScore: async (req, res) => {
         try {
@@ -298,9 +430,10 @@ const userCtrl = {
     }
 };
 
+
 // Helper functions
 const createAccessToken = (payload) => {
-    return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
+    return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '7d' });
 };
 
 const createRefreshToken = (payload) => {
