@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-const API_URL = "http://57.131.24.227/api/notifications";
+const API_URL = "https://57.131.24.227/api/notifications";
 
 // ----------------------------
 // Fetch notifications for a specific user (including forall)
