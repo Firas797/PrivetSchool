@@ -1,16 +1,32 @@
-FROM node:20 as build
+# Stage 1: Build the React app
+FROM node:20 AS build
 
-RUN mkdir -p /usr/src/app
+# Set working directory
 WORKDIR /usr/src/app
+
+# Add node_modules/.bin to PATH
 ENV PATH /usr/src/app/node_modules/.bin:$PATH
-COPY package.json ./
-COPY package-lock.json ./
+
+# Copy package files and install dependencies
+COPY package.json package-lock.json ./
 RUN npm cache clean --force
 RUN npm install --force
-#RUN npm install react-scripts@3.4.1 -g --silent 
-COPY . /usr/src/app
-#RUN CI=true npm test
+
+# Copy the rest of the app and build
+COPY . ./
 RUN npm run build
 
-EXPOSE 3000
-CMD ["npm", "start"]
+# Stage 2: Serve the app with Nginx
+FROM nginx:alpine
+
+# Remove default nginx static files
+RUN rm -rf /usr/share/nginx/html/*
+
+# Copy React build to Nginx folder
+COPY --from=build /usr/src/app/build /usr/share/nginx/html
+
+# Expose port 80
+EXPOSE 80
+
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"]
