@@ -6,68 +6,35 @@ const path = require('path');
 const DBConnetct = require('./config/DBConnetct');
 const { default: helmet } = require('helmet');
 
+console.log('🚀 Starting server...');
+
 // Connect to MongoDB
 DBConnetct();
 
 const app = express();
 
-// Serve uploads statically
+// Basic middleware first
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// Simple CORS for now
+app.use(cors());
+
+// Health check endpoint (MUST BE FIRST ROUTE)
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    message: 'Server is healthy',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Serve uploads
 app.use('/uploads', express.static('uploads'));
 
 // Security middleware
 app.use(helmet());
-
-// Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
-
-// Cookie parser
-app.use(cookieParser());
-
-// Enhanced CORS configuration
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      const allowedOrigins = [
-        'http://57.131.24.227:3000',
-        'http://57.131.24.227',
-        'http://localhost:3000'
-      ];
-      
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    credentials: true,
-    optionsSuccessStatus: 200
-  })
-);
-
-// Handle preflight requests globally
-app.options('*', cors());
-
-// Ensure upload directory exists
-const fs = require('fs');
-const uploadDir = 'uploads/profile-pictures';
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Test route
-app.get('/api/health', (req, res) => {
-    res.json({ 
-        status: 'OK', 
-        message: 'Server is running',
-        timestamp: new Date().toISOString()
-    });
-});
 
 // Routes
 app.use('/user', require('./routes/userRoutes'));
@@ -82,26 +49,40 @@ app.use('/api/emplois', require('./routes/emploiRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/exams', require('./routes/examRoutes'));
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error('Error:', err.message);
-    res.status(500).json({ 
-        message: 'Something went wrong!',
-        error: process.env.NODE_ENV === 'production' ? {} : err.message
-    });
+// Root route
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'PrivetSchool API is running',
+    health: '/health'
+  });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
-    res.status(404).json({ 
-        message: 'Route not found',
-        path: req.originalUrl
-    });
+// Error handling
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ error: 'Internal Server Error' });
 });
 
 const PORT = process.env.PORT || 80;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server is running on port ${PORT}`);
-    console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🔗 CORS enabled for: ${process.env.CLIENT_URL}`);
+
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Server is running on port ${PORT}`);
+  console.log(`✅ Health check: http://localhost:${PORT}/health`);
+});
+
+// Graceful shutdown handling
+process.on('SIGTERM', () => {
+  console.log('🔄 Received SIGTERM, shutting down gracefully...');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('🔄 Received SIGINT, shutting down gracefully...');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
 });
