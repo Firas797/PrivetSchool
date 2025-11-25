@@ -2,13 +2,16 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
+// ✅ CORRIGÉ: Utiliser l'URL de votre backend
+const API_BASE_URL = 'http://57.131.24.227';
+
 // Thunk for fetching homework
 export const fetchHomeWorks = createAsyncThunk('homeWorks/fetchHomeWorks', async (_, { rejectWithValue }) => {
   try {
-    const response = await axios.get('/api/homeworks/getAllHw');
+    const response = await axios.get(`${API_BASE_URL}/api/homeworks/getAllHw`);
     return response.data;
   } catch (error) {
-    return rejectWithValue(error.response.data);
+    return rejectWithValue(error.response?.data || { msg: 'Échec de la récupération des devoirs' });
   }
 });
 
@@ -17,23 +20,54 @@ export const addHomeWorkAsync = createAsyncThunk('homeWorks/addHomeWork', async 
   try {
     // Ensure homeWorkData is correctly formatted
     const { title, classe, description, category } = homeWorkData;
-    const response = await axios.post('/api/homeworks/createHw', { title, classe, description, category });
-    toast.success('Homework added successfully');
+    const response = await axios.post(`${API_BASE_URL}/api/homeworks/createHw`, { title, classe, description, category });
+    toast.success('Devoir ajouté avec succès');
     return response.data.homeWork;
   } catch (error) {
-    toast.error('Failed to add Homework');
-    return rejectWithValue(error.response.data);
+    toast.error('Échec de l\'ajout du devoir');
+    return rejectWithValue(error.response?.data || { msg: 'Échec de l\'ajout du devoir' });
   }
 });
+
 // 🔹 Add this new thunk in your slice file
 export const fetchHomeWorksByClass = createAsyncThunk(
   'homeWorks/fetchHomeWorksByClass',
   async (classNumber, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`/api/homeworks/by-class/${classNumber}`);
+      const response = await axios.get(`${API_BASE_URL}/api/homeworks/by-class/${classNumber}`);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || { msg: 'Error fetching homeworks' });
+      return rejectWithValue(error.response?.data || { msg: 'Erreur lors de la récupération des devoirs' });
+    }
+  }
+);
+
+// 🔹 Thunk for updating homework
+export const updateHomeWorkAsync = createAsyncThunk(
+  'homeWorks/updateHomeWork',
+  async ({ id, homeWorkData }, { rejectWithValue }) => {
+    try {
+      const response = await axios.put(`${API_BASE_URL}/api/homeworks/updateHw/${id}`, homeWorkData);
+      toast.success('Devoir mis à jour avec succès');
+      return response.data.homeWork;
+    } catch (error) {
+      toast.error('Échec de la mise à jour du devoir');
+      return rejectWithValue(error.response?.data || { msg: 'Échec de la mise à jour du devoir' });
+    }
+  }
+);
+
+// 🔹 Thunk for deleting homework
+export const deleteHomeWorkAsync = createAsyncThunk(
+  'homeWorks/deleteHomeWork',
+  async (id, { rejectWithValue }) => {
+    try {
+      await axios.delete(`${API_BASE_URL}/api/homeworks/deleteHw/${id}`);
+      toast.success('Devoir supprimé avec succès');
+      return id;
+    } catch (error) {
+      toast.error('Échec de la suppression du devoir');
+      return rejectWithValue(error.response?.data || { msg: 'Échec de la suppression du devoir' });
     }
   }
 );
@@ -48,10 +82,16 @@ const homeWorkSlice = createSlice({
   name: 'homeWorks',
   initialState,
   reducers: {
-    // Your existing reducers
+    clearError: (state) => {
+      state.error = null;
+    },
+    clearHomeWorks: (state) => {
+      state.homeWorks = [];
+    }
   },
   extraReducers: (builder) => {
     builder
+      // Fetch all homeworks
       .addCase(fetchHomeWorks.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -63,8 +103,10 @@ const homeWorkSlice = createSlice({
       })
       .addCase(fetchHomeWorks.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload.msg;
+        state.error = action.payload?.msg || 'Erreur lors de la récupération des devoirs';
       })
+      
+      // Add homework
       .addCase(addHomeWorkAsync.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -76,23 +118,59 @@ const homeWorkSlice = createSlice({
       })
       .addCase(addHomeWorkAsync.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload.msg;
+        state.error = action.payload?.msg || 'Erreur lors de l\'ajout du devoir';
       })
-       .addCase(fetchHomeWorksByClass.pending, (state) => {
-    state.loading = true;
-    state.error = null;
-  })
-  .addCase(fetchHomeWorksByClass.fulfilled, (state, action) => {
-    state.loading = false;
-    state.error = null;
-    state.homeWorks = action.payload;
-  })
-  .addCase(fetchHomeWorksByClass.rejected, (state, action) => {
-    state.loading = false;
-    state.error = action.payload.msg;
-  });
+      
+      // Fetch homeworks by class
+      .addCase(fetchHomeWorksByClass.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchHomeWorksByClass.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+        state.homeWorks = action.payload;
+      })
+      .addCase(fetchHomeWorksByClass.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.msg || 'Erreur lors de la récupération des devoirs par classe';
+      })
+      
+      // Update homework
+      .addCase(updateHomeWorkAsync.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateHomeWorkAsync.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.homeWorks.findIndex(hw => hw._id === action.payload._id);
+        if (index !== -1) {
+          state.homeWorks[index] = action.payload;
+        }
+      })
+      .addCase(updateHomeWorkAsync.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.msg || 'Erreur lors de la mise à jour du devoir';
+      })
+      
+      // Delete homework
+      .addCase(deleteHomeWorkAsync.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteHomeWorkAsync.fulfilled, (state, action) => {
+        state.loading = false;
+        state.homeWorks = state.homeWorks.filter(hw => hw._id !== action.payload);
+      })
+      .addCase(deleteHomeWorkAsync.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.msg || 'Erreur lors de la suppression du devoir';
+      });
   },
 });
+
+export const { clearError, clearHomeWorks } = homeWorkSlice.actions;
+
 export const selectHomeWorks = (state) => state.homeWork.homeWorks;
 export const selectHomeWorksLoading = (state) => state.homeWork.loading;
 export const selectHomeWorksError = (state) => state.homeWork.error;

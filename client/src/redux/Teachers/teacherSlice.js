@@ -1,6 +1,10 @@
 // src/redux/Teachers/teacherSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { toast } from 'react-toastify';
+
+// ✅ CORRIGÉ: Utiliser l'URL de votre backend
+const API_BASE_URL = 'http://57.131.24.227';
 
 // ========================
 // 🔹 AUTH THUNKS
@@ -11,12 +15,14 @@ export const loginTeacher = createAsyncThunk(
   'auth/loginTeacher',
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/teachers/loginTeacher', userData);
-      const { token, teacher } = response.data; // <-- corrected key
+      const response = await axios.post(`${API_BASE_URL}/teachers/loginTeacher`, userData);
+      const { token, teacher } = response.data;
       localStorage.setItem('token', token);
-      return teacher; // return teacher object
+      toast.success('Connexion enseignant réussie');
+      return teacher;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      toast.error('Échec de la connexion enseignant');
+      return rejectWithValue(error.response?.data || { msg: 'Échec de la connexion enseignant' });
     }
   }
 );
@@ -26,15 +32,19 @@ export const registerTeacher = createAsyncThunk(
   'auth/registerTeacher',
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/teachers/registerTeacher', userData);
+      const response = await axios.post(`${API_BASE_URL}/teachers/registerTeacher`, userData);
       const { token, teacher } = response.data;
       localStorage.setItem('token', token);
+      toast.success('Inscription enseignant réussie');
       return teacher;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      toast.error('Échec de l\'inscription enseignant');
+      return rejectWithValue(error.response?.data || { msg: 'Échec de l\'inscription enseignant' });
     }
   }
 );
+
+// Get Students by Teacher
 export const getStudentsByTeacher = createAsyncThunk(
   'teacher/getStudentsByTeacher',
   async (teacherId, { rejectWithValue }) => {
@@ -43,15 +53,16 @@ export const getStudentsByTeacher = createAsyncThunk(
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
-      const response = await axios.get(`/teachers/students?teacherId=${teacherId}`, config);
-      console.log("Response from server:", response.data); // ✅ check server response
+      const response = await axios.get(`${API_BASE_URL}/teachers/students?teacherId=${teacherId}`, config);
+      console.log("Réponse du serveur:", response.data);
       return response.data; 
     } catch (error) {
       console.error(error.response?.data);
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response?.data || { msg: 'Échec de la récupération des étudiants' });
     }
   }
 );
+
 // ========================
 // 🔹 TEACHER MANAGEMENT THUNKS
 // ========================
@@ -61,10 +72,10 @@ export const getAllTeachers = createAsyncThunk(
   'teachers/getAllTeachers',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get('/teachers/getAllTeachers');
+      const response = await axios.get(`${API_BASE_URL}/teachers/getAllTeachers`);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response?.data || { msg: 'Échec de la récupération des enseignants' });
     }
   }
 );
@@ -74,10 +85,12 @@ export const updateTeacher = createAsyncThunk(
   'teachers/updateTeacher',
   async ({ id, teacherData }, { rejectWithValue }) => {
     try {
-      const response = await axios.put(`/teachers/updateTeacher/${id}`, teacherData);
+      const response = await axios.put(`${API_BASE_URL}/teachers/updateTeacher/${id}`, teacherData);
+      toast.success('Enseignant mis à jour avec succès');
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      toast.error('Échec de la mise à jour de l\'enseignant');
+      return rejectWithValue(error.response?.data || { msg: 'Échec de la mise à jour de l\'enseignant' });
     }
   }
 );
@@ -87,10 +100,12 @@ export const deleteTeacher = createAsyncThunk(
   'teachers/deleteTeacher',
   async (id, { rejectWithValue }) => {
     try {
-      const response = await axios.delete(`/teachers/deleteTeacher/${id}`);
+      const response = await axios.delete(`${API_BASE_URL}/teachers/deleteTeacher/${id}`);
+      toast.success('Enseignant supprimé avec succès');
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      toast.error('Échec de la suppression de l\'enseignant');
+      return rejectWithValue(error.response?.data || { msg: 'Échec de la suppression de l\'enseignant' });
     }
   }
 );
@@ -98,13 +113,12 @@ export const deleteTeacher = createAsyncThunk(
 // ========================
 // 🧩 QUIZ CREATION THUNK
 // ========================
-// In teacherSlice.js - UPDATE the createQuiz thunk
 export const createQuiz = createAsyncThunk(
   'quizzes/createQuiz',
   async (quizData, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem('token');
-      console.log('🔄 Sending quiz creation request...', quizData);
+      console.log('🔄 Envoi de la requête de création de quiz...', quizData);
       
       const config = {
         headers: { 
@@ -113,33 +127,75 @@ export const createQuiz = createAsyncThunk(
         }
       };
       
-      const response = await axios.post('/api/quizzes/createQuiz', quizData, config);
-      console.log('✅ Quiz creation response:', response.data);
+      const response = await axios.post(`${API_BASE_URL}/api/quizzes/createQuiz`, quizData, config);
+      console.log('✅ Réponse création quiz:', response.data);
+      toast.success('Quiz créé avec succès');
       return response.data.quiz;
     } catch (error) {
-      console.error('❌ Quiz creation error details:', {
+      console.error('❌ Erreur création quiz:', {
         status: error.response?.status,
         data: error.response?.data,
         message: error.message
       });
-      return rejectWithValue(error.response?.data || { error: 'Network error' });
+      toast.error('Échec de la création du quiz');
+      return rejectWithValue(error.response?.data || { error: 'Erreur réseau' });
     }
   }
 );
+
+// ========================
+// 🔹 ADDITIONAL TEACHER THUNKS
+// ========================
+
+// Get teacher by ID
+export const getTeacherById = createAsyncThunk(
+  'teachers/getTeacherById',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/teachers/${id}`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { msg: 'Échec de la récupération de l\'enseignant' });
+    }
+  }
+);
+
+// Update teacher profile
+export const updateTeacherProfile = createAsyncThunk(
+  'teachers/updateTeacherProfile',
+  async (teacherData, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem('token');
+      const config = {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      };
+      const response = await axios.put(`${API_BASE_URL}/teachers/profile`, teacherData, config);
+      toast.success('Profil enseignant mis à jour avec succès');
+      return response.data;
+    } catch (error) {
+      toast.error('Échec de la mise à jour du profil');
+      return rejectWithValue(error.response?.data || { msg: 'Échec de la mise à jour du profil' });
+    }
+  }
+);
+
 // ========================
 // 🔹 SLICE
 // ========================
 const teacherSlice = createSlice({
   name: 'teacher',
   initialState: {
-    teacher: null, // logged-in teacher info
+    teacher: null,
     token: localStorage.getItem('token') || null,
     loading: false,
     error: null,
     isLogedIn: false,
-    teachers: [], // all teachers
-      students: [],  // ✅ new state for students
-
+    teachers: [],
+    students: [],
+    
     // Quiz state
     quizLoading: false,
     quizError: null,
@@ -152,12 +208,19 @@ const teacherSlice = createSlice({
       state.token = null;
       state.isLogedIn = false;
       localStorage.removeItem('token');
+      toast.info('Enseignant déconnecté');
     },
     resetQuizState: (state) => {
       state.quizLoading = false;
       state.quizError = null;
       state.quizSuccess = false;
       state.createdQuiz = null;
+    },
+    clearError: (state) => {
+      state.error = null;
+    },
+    clearStudents: (state) => {
+      state.students = [];
     }
   },
   extraReducers: (builder) => {
@@ -171,14 +234,15 @@ const teacherSlice = createSlice({
       })
       .addCase(loginTeacher.fulfilled, (state, action) => {
         state.loading = false;
-        state.teacher = action.payload; // now teacher info is stored
+        state.teacher = action.payload;
         state.token = localStorage.getItem('token');
         state.isLogedIn = true;
       })
       .addCase(loginTeacher.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload.msg || 'Login failed';
+        state.error = action.payload?.msg || 'Échec de la connexion enseignant';
       })
+      
       // ======================
       // REGISTER
       // ======================
@@ -194,8 +258,9 @@ const teacherSlice = createSlice({
       })
       .addCase(registerTeacher.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload.msg || 'Registration failed';
+        state.error = action.payload?.msg || 'Échec de l\'inscription enseignant';
       })
+      
       // ======================
       // GET ALL TEACHERS
       // ======================
@@ -209,21 +274,40 @@ const teacherSlice = createSlice({
       })
       .addCase(getAllTeachers.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload.msg || 'Failed to fetch teachers';
+        state.error = action.payload?.msg || 'Échec de la récupération des enseignants';
       })
+      
       // ======================
       // UPDATE TEACHER
       // ======================
+      .addCase(updateTeacher.pending, (state) => {
+        state.loading = true;
+      })
       .addCase(updateTeacher.fulfilled, (state, action) => {
+        state.loading = false;
         const index = state.teachers.findIndex(t => t._id === action.payload._id);
         if (index !== -1) state.teachers[index] = action.payload;
       })
+      .addCase(updateTeacher.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.msg || 'Échec de la mise à jour de l\'enseignant';
+      })
+      
       // ======================
       // DELETE TEACHER
       // ======================
+      .addCase(deleteTeacher.pending, (state) => {
+        state.loading = true;
+      })
       .addCase(deleteTeacher.fulfilled, (state, action) => {
+        state.loading = false;
         state.teachers = state.teachers.filter(t => t._id !== action.meta.arg);
       })
+      .addCase(deleteTeacher.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.msg || 'Échec de la suppression de l\'enseignant';
+      })
+      
       // ======================
       // CREATE QUIZ
       // ======================
@@ -239,21 +323,56 @@ const teacherSlice = createSlice({
       })
       .addCase(createQuiz.rejected, (state, action) => {
         state.quizLoading = false;
-        state.quizError = action.payload?.error || 'Failed to create quiz';
-      }).addCase(getStudentsByTeacher.pending, (state) => {
-  state.loading = true;
-  state.error = null;
-})
-.addCase(getStudentsByTeacher.fulfilled, (state, action) => {
-  state.loading = false;
-  state.students = action.payload;
-})
-.addCase(getStudentsByTeacher.rejected, (state, action) => {
-  state.loading = false;
-  state.error = action.payload?.msg || 'Failed to fetch students';
-});
+        state.quizError = action.payload?.error || 'Échec de la création du quiz';
+      })
+      
+      // ======================
+      // GET STUDENTS BY TEACHER
+      // ======================
+      .addCase(getStudentsByTeacher.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getStudentsByTeacher.fulfilled, (state, action) => {
+        state.loading = false;
+        state.students = action.payload;
+      })
+      .addCase(getStudentsByTeacher.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.msg || 'Échec de la récupération des étudiants';
+      })
+      
+      // ======================
+      // GET TEACHER BY ID
+      // ======================
+      .addCase(getTeacherById.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(getTeacherById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.teacher = action.payload;
+      })
+      .addCase(getTeacherById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.msg || 'Échec de la récupération de l\'enseignant';
+      })
+      
+      // ======================
+      // UPDATE TEACHER PROFILE
+      // ======================
+      .addCase(updateTeacherProfile.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(updateTeacherProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.teacher = action.payload;
+      })
+      .addCase(updateTeacherProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.msg || 'Échec de la mise à jour du profil';
+      });
   },
 });
 
-export const { logoutTeacher, resetQuizState } = teacherSlice.actions;
+export const { logoutTeacher, resetQuizState, clearError, clearStudents } = teacherSlice.actions;
 export default teacherSlice.reducer;
