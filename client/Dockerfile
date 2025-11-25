@@ -1,28 +1,32 @@
+# ================================
 # Stage 1: Build the React app
+# ================================
 FROM node:20 AS build
 
 # Set working directory
 WORKDIR /usr/src/app
 
-# Add node_modules/.bin to PATH
-ENV PATH /usr/src/app/node_modules/.bin:$PATH
-
-# Copy package files and install dependencies
+# Copy package files
 COPY package.json package-lock.json ./
-RUN npm cache clean --force
-RUN npm install --force
 
-# Copy the rest of the app and build
+# Install dependencies
+RUN npm install --silent
+
+# Copy all source files
 COPY . ./
+
+# Build the React app for production
 RUN npm run build
 
-# Stage 2: Serve the app with Nginx
+# ================================
+# Stage 2: Serve with Nginx
+# ================================
 FROM nginx:alpine
 
-# Remove default nginx static files
+# Remove default Nginx static files
 RUN rm -rf /usr/share/nginx/html/*
 
-# Copy React build to Nginx folder
+# Copy React build from previous stage
 COPY --from=build /usr/src/app/build /usr/share/nginx/html
 
 # Expose port 80
