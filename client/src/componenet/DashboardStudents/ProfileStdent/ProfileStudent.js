@@ -48,10 +48,10 @@ function ProfileStudent() {
 
     const getProfilePicture = () => {
         if (displayStudent.profilePicture) {
-            return `http://localhost:5000/${displayStudent.profilePicture}`;
+            return `http://57.131.24.227/${displayStudent.profilePicture}`;
         }
         if (user?.profilePicture) {
-            return `http://localhost:5000/${user.profilePicture}`;
+            return `http://57.131.24.227/${user.profilePicture}`;
         }
         return "https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3.webp";
     };

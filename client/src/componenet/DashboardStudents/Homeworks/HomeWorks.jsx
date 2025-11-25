@@ -188,7 +188,7 @@ function HomeWorks({ child }) {
                     <span>📄</span>
                     <span>ملف PDF مرفق</span>
                     <a
-                      href={`http://localhost:5000/${item.pdfFile}`}
+                      href={`http://57.131.24.227/${item.pdfFile}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="download-btn"

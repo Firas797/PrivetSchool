@@ -73,14 +73,29 @@ function Quizes() {
 
       setQuizResult(response.data);
 
-      // ✅ Save quiz as completed
-      const updatedCompleted = [...new Set([...completedQuizzes, selectedQuiz._id])];
-      setCompletedQuizzes(updatedCompleted);
-      localStorage.setItem('completedQuizzes', JSON.stringify(updatedCompleted));
+      // ✅ Save quiz as completed ONLY if score is 100% (perfect)
+      if (response.data.score === 100) {
+        const updatedCompleted = [...new Set([...completedQuizzes, selectedQuiz._id])];
+        setCompletedQuizzes(updatedCompleted);
+        localStorage.setItem('completedQuizzes', JSON.stringify(updatedCompleted));
+      }
     } catch (err) {
       console.error('فشل في تقديم الاختبار:', err);
       alert('فشل في تقديم الاختبار');
     }
+  };
+
+  const retryQuiz = () => {
+    // Reset only the quiz taking state, keep the same quiz selected
+    setAnswers(new Array(selectedQuiz.questions.length).fill(''));
+    setQuizResult(null);
+  };
+
+  const moveToNextQuiz = () => {
+    // Reset everything and go back to quiz list
+    setSelectedQuiz(null);
+    setAnswers([]);
+    setQuizResult(null);
   };
 
   const resetQuiz = () => {
@@ -96,7 +111,7 @@ function Quizes() {
     }));
   };
 
-  // ✅ حساب نسبة التقدم
+  // ✅ حساب نسبة التقدم (only quizzes with 100% score)
   const progressPercentage =
     quizzes.length > 0
       ? Math.round((completedQuizzes.length / quizzes.length) * 100)
@@ -199,9 +214,8 @@ function Quizes() {
                 <button
                   onClick={() => startQuiz(quiz)}
                   className="start-quiz-btn"
-                  disabled={isDone}
                 >
-                  {isDone ? 'منجز ✅' : 'بدء الاختبار'}
+                  {isDone ? 'معاينة ✅' : 'بدء الاختبار'}
                 </button>
               </div>
             );
@@ -278,31 +292,52 @@ function Quizes() {
     </div>
   );
 
-  const renderQuizResult = () => (
-    <div className="quiz-result">
-      <div
-        className={`result-header ${
-          quizResult.score === 100 ? 'perfect-score' : 'need-improvement'
-        }`}
-      >
-        <h2>نتائج الاختبار</h2>
-        <div className="score-circle">
-          <span className="score-percentage">
-            {Math.round(quizResult.score)}%
-          </span>
+  const renderQuizResult = () => {
+    const isPerfectScore = quizResult.score === 100;
+    const isCompleted = completedQuizzes.includes(selectedQuiz._id);
+
+    return (
+      <div className="quiz-result">
+        <div
+          className={`result-header ${
+            isPerfectScore ? 'perfect-score' : 'need-improvement'
+          }`}
+        >
+          <h2>نتائج الاختبار</h2>
+          <div className="score-circle">
+            <span className="score-percentage">
+              {Math.round(quizResult.score)}%
+            </span>
+          </div>
+        </div>
+
+        <div className="result-details">
+          <p><strong>الرسالة:</strong> {quizResult.message}</p>
+          <p><strong>أفضل نتيجة:</strong> {quizResult.bestScore}%</p>
+          {isPerfectScore && !isCompleted && (
+            <p className="success-message">🎉 مبروك! لقد أكملت هذا الاختبار بنجاح</p>
+          )}
+        </div>
+
+        <div className="result-actions">
+          {!isPerfectScore ? (
+            <>
+              <button onClick={retryQuiz} className="retry-btn">
+                🔄 إعادة الاختبار
+              </button>
+              <button onClick={moveToNextQuiz} className="next-quiz-btn">
+                ➡️ الانتقال إلى اختبار آخر
+              </button>
+            </>
+          ) : (
+            <button onClick={moveToNextQuiz} className="try-again-btn">
+              اختبار آخر
+            </button>
+          )}
         </div>
       </div>
-
-      <div className="result-details">
-        <p><strong>الرسالة:</strong> {quizResult.message}</p>
-        <p><strong>أفضل نتيجة:</strong> {quizResult.bestScore}%</p>
-      </div>
-
-      <button onClick={resetQuiz} className="try-again-btn">
-        اختبار آخر
-      </button>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="quizes-container">

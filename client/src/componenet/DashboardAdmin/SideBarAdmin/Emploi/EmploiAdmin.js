@@ -28,7 +28,7 @@ formData.append("image", image);
       setLoading(true);
       setMessage("");
 
-      const res = await fetch("http://localhost:5000/api/emplois", {
+      const res = await fetch("http://57.131.24.227/api/emplois", {
         method: "POST",
         body: formData,
       });
