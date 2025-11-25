@@ -6,7 +6,7 @@ const path = require('path');
 const DBConnetct = require('./config/DBConnetct');
 const { default: helmet } = require('helmet');
 
-console.log('🚀 Starting server with CORS FIX...');
+console.log('🚀 Starting server with CORS DEBUG...');
 
 // Connect to MongoDB
 DBConnetct();
@@ -25,21 +25,12 @@ app.use((req, res, next) => {
   
   // Handle preflight
   if (req.method === 'OPTIONS') {
-    console.log('✅ Handling OPTIONS preflight');
+    console.log('✅ Handling OPTIONS preflight for:', req.url);
     return res.status(200).end();
   }
   
   next();
 });
-
-// Also use cors package as backup
-app.use(cors({
-  origin: 'https://privetschool-front.ohbjmh.easypanel.host',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
-}));
-
-app.options('*', cors());
 
 // Basic middleware
 app.use(express.json({ limit: '10mb' }));
@@ -52,93 +43,86 @@ app.use('/uploads', express.static('uploads'));
 // Security middleware
 app.use(helmet());
 
-// Ensure upload directory exists
-const fs = require('fs');
-const uploadDir = 'uploads/profile-pictures';
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Health check endpoint (MUST BE FIRST ROUTE)
+// Health check endpoint
 app.get('/health', (req, res) => {
+  console.log('✅ Health check called');
   res.status(200).json({ 
     status: 'OK', 
-    message: 'Server with CORS FIX is running',
+    message: 'Server with CORS DEBUG is running',
     timestamp: new Date().toISOString(),
     cors: 'enabled'
   });
 });
 
-// Routes
-app.use('/user', require('./routes/userRoutes'));
-app.use('/api/courses', require('./routes/coursesRouter'));
-app.use('/api/conclusions', require('./routes/concluRoutes'));
-app.use('/api/events', require('./routes/eventRoutes'));
-app.use('/api/homeworks', require('./routes/HomeWorkRoutes'));
-app.use('/teachers', require('./routes/teacherRoutes'));
-app.use('/api/quizzes', require('./routes/quizRoutes'));
-app.use('/api/culture', require('./routes/cultureRoutes'));
-app.use('/api/emplois', require('./routes/emploiRoutes'));
-app.use('/api/notifications', require('./routes/notificationRoutes'));
-app.use('/api/exams', require('./routes/examRoutes'));
+// Test login endpoint directly in server.js
+app.options('/user/login', (req, res) => {
+  console.log('✅✅✅ OPTIONS preflight for /user/login');
+  res.header('Access-Control-Allow-Origin', 'https://privetschool-front.ohbjmh.easypanel.host');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Cookie');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
+app.post('/user/login', (req, res) => {
+  console.log('✅✅✅ LOGIN endpoint called directly');
+  res.json({ 
+    message: 'Login successful - DIRECT ROUTE',
+    token: 'test-token-direct'
+  });
+});
+
+// Now load your regular routes
+console.log('📁 Loading routes...');
+try {
+  app.use('/user', require('./routes/userRoutes'));
+  console.log('✅ userRoutes loaded');
+} catch (error) {
+  console.log('❌ Error loading userRoutes:', error.message);
+}
+
+try {
+  app.use('/api/courses', require('./routes/coursesRouter'));
+  console.log('✅ coursesRouter loaded');
+} catch (error) {
+  console.log('❌ Error loading coursesRouter:', error.message);
+}
+
+// Add other routes with error handling...
+try {
+  app.use('/api/conclusions', require('./routes/concluRoutes'));
+  app.use('/api/events', require('./routes/eventRoutes'));
+  app.use('/api/homeworks', require('./routes/HomeWorkRoutes'));
+  app.use('/teachers', require('./routes/teacherRoutes'));
+  app.use('/api/quizzes', require('./routes/quizRoutes'));
+  app.use('/api/culture', require('./routes/cultureRoutes'));
+  app.use('/api/emplois', require('./routes/emploiRoutes'));
+  app.use('/api/notifications', require('./routes/notificationRoutes'));
+  app.use('/api/exams', require('./routes/examRoutes'));
+  console.log('✅ All routes loaded successfully');
+} catch (error) {
+  console.log('❌ Error loading some routes:', error.message);
+}
 
 // Root route
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'PrivetSchool API is running with CORS FIX',
-    health: '/health',
-    endpoints: {
-      auth: '/user/login, /user/register',
-      courses: '/api/courses',
-      exams: '/api/exams',
-      homeworks: '/api/homeworks',
-      quizzes: '/api/quizzes',
-      events: '/api/events',
-      teachers: '/teachers'
-    }
-  });
-});
-
-// 404 handler for API routes
-app.use('/api/*', (req, res) => {
-  console.log('❌ 404 - API route not found:', req.originalUrl);
-  res.status(404).json({ 
-    error: 'API route not found',
-    path: req.originalUrl,
-    method: req.method
-  });
-});
-
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error('❌ Server error:', err);
-  res.status(500).json({ 
-    error: 'Internal server error',
-    message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message
+    message: 'PrivetSchool API - CORS DEBUG',
+    test: 'Try /user/login - it should work now',
+    health: '/health'
   });
 });
 
 const PORT = process.env.PORT || 5000;
 
 const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅✅✅ SERVER STARTED - CORS FIX VERSION RUNNING ON PORT ${PORT}`);
-  console.log(`✅✅✅ CORS ENABLED FOR: https://privetschool-front.ohbjmh.easypanel.host`);
-  console.log(`✅✅✅ Health check: https://57.131.24.227:${PORT}/health`);
+  console.log(`✅✅✅ SERVER STARTED - CORS DEBUG VERSION ON PORT ${PORT}`);
+  console.log(`✅✅✅ Test login: https://57.131.24.227:${PORT}/user/login`);
 });
 
-// Graceful shutdown handling
 process.on('SIGTERM', () => {
-  console.log('🔄 Received SIGTERM, shutting down gracefully...');
+  console.log('🔄 Shutting down...');
   server.close(() => {
-    console.log('✅ Server closed');
-    process.exit(0);
-  });
-});
-
-process.on('SIGINT', () => {
-  console.log('🔄 Received SIGINT, shutting down gracefully...');
-  server.close(() => {
-    console.log('✅ Server closed');
     process.exit(0);
   });
 });
