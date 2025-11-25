@@ -11,11 +11,8 @@ DBConnect();
 
 const app = express();
 
-// ✅ CORS CONFIGURATION
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'https://privetschool-front.ohbjmh.easypanel.host',
-  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization','X-Requested-With','Cookie'],
+  origin: 'https://privetschool-front.ohbjmh.easypanel.host',
   credentials: true
 }));
 
