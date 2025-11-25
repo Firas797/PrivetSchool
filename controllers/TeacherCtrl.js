@@ -1,5 +1,5 @@
 const Teacher = require("../models/TeacherModel"); // Import the Teacher model
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const Users = require("../models/userModel"); // 👈 add this
 
