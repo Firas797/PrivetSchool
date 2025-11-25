@@ -4,10 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "cd backend && node server.js",
-    "server": "cd backend && nodemon server.js",
+    "start": "node server.js",
+    "server": "nodemon server.js",
     "client": "cd client && npm run start",
-    "server-install": "cd backend && npm install",
+    "server-install": "npm install",
     "client-install": "cd client && npm install",
     "install-all": "concurrently \"npm run server-install\" \"npm run client-install\"",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
