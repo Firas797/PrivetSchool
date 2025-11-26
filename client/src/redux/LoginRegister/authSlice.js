@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 
 // ✅ CORRIGÉ: Utiliser l'URL de votre backend
 const API_BASE_URL = 'https://57.131.24.227';
+axios.defaults.withCredentials = true; // if your backend uses cookies
 
 // ✅ Configuration de base - CORRIGÉ
 axios.defaults.baseURL = API_BASE_URL;
