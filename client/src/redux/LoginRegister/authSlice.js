@@ -21,7 +21,7 @@ export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/user/login', userData);
+      const response = await axios.post('https://57.131.24.227/user/login', userData);
       const { token, user } = response.data;
 
       if (token) {
