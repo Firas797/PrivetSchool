@@ -8,15 +8,15 @@ const API_BASE_URL = 'https://privetschool-backend.ohbjmh.easypanel.host';
 // Create axios instance
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true,
+  withCredentials: true, // This is important for cookies
 });
 
-// Request interceptor to add token
+// Request interceptor
 axiosInstance.interceptors.request.use(
   (config) => {
-    let token = localStorage.getItem('token');
-    if (token) {
-      token = token.replace(/^"|"$/g, ''); // Remove extra quotes if any
+    const token = localStorage.getItem('token');
+    // ✅ FIX: Check if token exists and isn't the test token
+    if (token && token !== '"test-token-direct"') {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
