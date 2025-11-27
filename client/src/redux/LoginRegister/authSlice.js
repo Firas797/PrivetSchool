@@ -4,11 +4,12 @@ import { toast } from 'react-toastify';
 
 // ✅ CORRIGÉ: Utiliser l'URL de votre backend
 const API_BASE_URL = 'https://privetschool-backend.ohbjmh.easypanel.host';
-axios.defaults.withCredentials = true; // if your backend uses cookies
-
-// ✅ Configuration de base - CORRIGÉ
+// Configure axios defaults
 axios.defaults.baseURL = API_BASE_URL;
+axios.defaults.withCredentials = true; // This is crucial for cookies
+axios.defaults.headers.common['Content-Type'] = 'application/json';
 
+// Request interceptor
 axios.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -16,6 +17,31 @@ axios.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Response interceptor to handle token refresh
+axios.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      // Token expired, try to refresh
+      try {
+        const response = await axios.get('/user/refresh_token');
+        const newToken = response.data.token;
+        localStorage.setItem('token', newToken);
+        
+        // Retry original request
+        error.config.headers.Authorization = `Bearer ${newToken}`;
+        return axios.request(error.config);
+      } catch (refreshError) {
+        // Refresh failed, logout user
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 // ✅ Connexion utilisateur
 export const loginUser = createAsyncThunk(

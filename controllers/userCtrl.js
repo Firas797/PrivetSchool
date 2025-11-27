@@ -199,13 +199,14 @@ register: async (req, res) => {
       const refreshToken = createRefreshToken({ id: user._id, role: user.role });
       await Users.findByIdAndUpdate(user._id, { refreshToken });
 
-      res.cookie('refreshtoken', refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        path: '/user/refresh_token',
-        maxAge: 7 * 24 * 60 * 60 * 1000
-      });
+     res.cookie('refreshtoken', refreshToken, {
+  httpOnly: true,
+  secure: true, // Force HTTPS in production
+  sameSite: 'none', // Changed from 'strict' for cross-domain
+  path: '/user/refresh_token',
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+  domain: '.ohbjmh.easypanel.host' // Add domain for subdomain sharing
+});
 
       const userResponse = {
         _id: user._id,
@@ -233,12 +234,13 @@ register: async (req, res) => {
       const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
       await Users.findByIdAndUpdate(decoded.id, { $unset: { refreshToken: 1 } });
 
-      res.clearCookie('refreshtoken', { 
-        path: '/user/refresh_token',
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
-      });
+     res.clearCookie('refreshtoken', { 
+  path: '/user/refresh_token',
+  httpOnly: true,
+  secure: true,
+  sameSite: 'none',
+  domain: '.ohbjmh.easypanel.host' // Same domain as above
+});
 
       return res.json({ msg: "Déconnexion réussie" });
     } catch (err) {
