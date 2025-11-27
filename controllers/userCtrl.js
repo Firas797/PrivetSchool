@@ -1,5 +1,5 @@
 const Users = require("../models/userModel");
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const fs = require('fs')
 const path = require('path')
@@ -184,112 +184,86 @@ register: async (req, res) => {
   }
 },
 
+ login: async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) return res.status(400).json({ msg: "Email et mot de passe requis" });
 
-    login: async (req, res) => {
-        try {
-            const { email, password } = req.body;
+      const user = await Users.findOne({ email });
+      if (!user) return res.status(400).json({ msg: "Utilisateur non trouvé." });
 
-            if (!email || !password) {
-                return res.status(400).json({ msg: "Veuillez fournir un email et un mot de passe" });
-            }
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) return res.status(400).json({ msg: "Mot de passe incorrect." });
 
-            const user = await Users.findOne({ email });
-            if (!user) return res.status(400).json({ msg: "Utilisateur non trouvé." });
+      const accessToken = createAccessToken({ id: user._id, role: user.role });
+      const refreshToken = createRefreshToken({ id: user._id, role: user.role });
+      await Users.findByIdAndUpdate(user._id, { refreshToken });
 
-            const isMatch = await user.comparePassword(password);
-            if (!isMatch) return res.status(400).json({ msg: "Mot de passe incorrect." });
+      res.cookie('refreshtoken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/user/refresh_token',
+        maxAge: 7 * 24 * 60 * 60 * 1000
+      });
 
-            // Génération des tokens
-            const accessToken = createAccessToken({ id: user._id, role: user.role });
-            const refreshToken = createRefreshToken({ id: user._id, role: user.role });
+      const userResponse = {
+        _id: user._id,
+        parentName: user.parentName,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        address: user.address,
+        plan: user.plan,
+        children: user.children,
+        role: user.role
+      };
 
-            // Mise à jour du refresh token en base
-            await Users.findByIdAndUpdate(user._id, { refreshToken });
+      res.json({ msg: "Connexion réussie", token: accessToken, user: userResponse });
+    } catch (err) {
+      console.error('Erreur login:', err);
+      return res.status(500).json({ msg: "Erreur serveur" });
+    }
+  },
 
-            // Configuration du cookie
-            res.cookie('refreshtoken', refreshToken, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict',
-                path: '/user/refresh_token',
-                maxAge: 7 * 24 * 60 * 60 * 1000 // 7 jours
-            });
+   logout: async (req, res) => {
+    try {
+      const refreshToken = req.cookies.refreshtoken;
+      if (!refreshToken) return res.status(400).json({ msg: "Pas de token trouvé" });
 
-            // Préparation de la réponse
-            const userResponse = {
-                _id: user._id,
-                parentName: user.parentName,
-                email: user.email,
-                phoneNumber: user.phoneNumber,
-                address: user.address,
-                plan: user.plan,
-                children: user.children,
-                role: user.role
-            };
+      const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+      await Users.findByIdAndUpdate(decoded.id, { $unset: { refreshToken: 1 } });
 
-            res.json({
-                msg: "Connexion réussie",
-                token: accessToken,
-                user: userResponse
-            });
+      res.clearCookie('refreshtoken', { 
+        path: '/user/refresh_token',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
 
-        } catch (err) {
-            console.error('Erreur lors de la connexion:', err);
-            return res.status(500).json({ msg: "Erreur serveur" });
-        }
-    },
-
-    logout: async (req, res) => {
-        try {
-            const refreshToken = req.cookies.refreshtoken;
-            if (!refreshToken) return res.status(400).json({ msg: "Pas de token trouvé" });
-
-            // Suppression du refresh token en base
-            const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-            await Users.findByIdAndUpdate(decoded.id, { $unset: { refreshToken: 1 } });
-
-            // Suppression du cookie
-            res.clearCookie('refreshtoken', { 
-                path: '/user/refresh_token',
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict'
-            });
-
-            return res.json({ msg: "Déconnexion réussie" });
-
-        } catch (err) {
-            console.error('Erreur lors de la déconnexion:', err);
-            return res.status(500).json({ msg: err.message });
-        }
-    },
+      return res.json({ msg: "Déconnexion réussie" });
+    } catch (err) {
+      console.error('Erreur logout:', err);
+      return res.status(500).json({ msg: err.message });
+    }
+  },
 
     refreshToken: async (req, res) => {
-        try {
-            const refreshToken = req.cookies.refreshtoken;
-            if (!refreshToken) return res.status(401).json({ msg: "Non authentifié" });
+    try {
+      const refreshToken = req.cookies.refreshtoken;
+      if (!refreshToken) return res.status(401).json({ msg: "Non authentifié" });
 
-            // Vérification du token
-            const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-            
-            // Vérification que le token est toujours valide en base
-            const user = await Users.findOne({ 
-                _id: decoded.id, 
-                refreshToken 
-            });
-            
-            if (!user) return res.status(403).json({ msg: "Token invalide" });
+      const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+      const user = await Users.findOne({ _id: decoded.id, refreshToken });
+      if (!user) return res.status(403).json({ msg: "Token invalide" });
 
-            // Génération d'un nouveau access token
-            const newAccessToken = createAccessToken({ id: user._id, role: user.role });
+      const newAccessToken = createAccessToken({ id: user._id, role: user.role });
+      res.json({ token: newAccessToken });
+    } catch (err) {
+      console.error('Erreur refreshToken:', err);
+      return res.status(500).json({ msg: "Erreur d'authentification" });
+    }
+  },
 
-            res.json({ token: newAccessToken });
-
-        } catch (err) {
-            console.error('Erreur lors du refresh token:', err);
-            return res.status(500).json({ msg: "Erreur d'authentification" });
-        }
-    },
  getUser: async (req, res) => {
     try {
       const user = await Users.findById(req.user.id).select('-password -refreshToken');
