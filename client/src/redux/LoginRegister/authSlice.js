@@ -47,17 +47,20 @@ export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.post('/user/login', userData);
-      const { token, user } = response.data;
+      const response = await axios.post('/user/login', userData);
+      const { access_token, user } = response.data;
 
-      const sanitizedToken = sanitizeToken(token);
+      if (access_token) {
+        localStorage.setItem('token', access_token);
+      } else if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+      }
 
-      if (sanitizedToken) localStorage.setItem('token', sanitizedToken);
-      if (user) localStorage.setItem('user', JSON.stringify(user));
+      if (user) localStorage.setItem('user', JSON.stringify(user)); // save user
 
-      return { token: sanitizedToken, user };
+      return { user, token: access_token || response.data.token };
     } catch (error) {
-      return rejectWithValue({ msg: error.response?.data?.msg || 'Échec de la connexion' });
+      return rejectWithValue(error.response?.data || { msg: 'Login failed' });
     }
   }
 );
