@@ -14,8 +14,9 @@ const axiosInstance = axios.create({
 // Request interceptor to add token
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    let token = localStorage.getItem('token');
     if (token) {
+      token = token.replace(/^"|"$/g, ''); // Remove extra quotes if any
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -25,13 +26,8 @@ axiosInstance.interceptors.request.use(
 
 // ------------------------ THUNKS ------------------------ //
 
-// Helper to sanitize token
-const sanitizeToken = (token) => {
-  if (typeof token === 'string') {
-    return token.replace(/^"(.+)"$/, '$1'); // Remove extra quotes if any
-  }
-  return token;
-};
+// Utility to sanitize token before saving
+const sanitizeToken = (token) => token?.replace(/^"|"$/g, '') || null;
 
 // Get user info
 export const getUserInfo = createAsyncThunk(
@@ -52,15 +48,14 @@ export const loginUser = createAsyncThunk(
   async (userData, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.post('/user/login', userData);
-      let { token, user } = response.data;
+      const { token, user } = response.data;
 
-      token = sanitizeToken(token);
+      const sanitizedToken = sanitizeToken(token);
 
-      if (token) localStorage.setItem('token', token);
+      if (sanitizedToken) localStorage.setItem('token', sanitizedToken);
       if (user) localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('isLoggedIn', true);
 
-      return { token, user };
+      return { token: sanitizedToken, user };
     } catch (error) {
       return rejectWithValue({ msg: error.response?.data?.msg || 'Échec de la connexion' });
     }
@@ -73,15 +68,14 @@ export const registerUser = createAsyncThunk(
   async (userData, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.post('/user/register', userData);
-      let { token, user } = response.data;
+      const { token, user } = response.data;
 
-      token = sanitizeToken(token);
+      const sanitizedToken = sanitizeToken(token);
 
-      if (token) localStorage.setItem('token', token);
+      if (sanitizedToken) localStorage.setItem('token', sanitizedToken);
       if (user) localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('isLoggedIn', true);
 
-      return { token, user };
+      return { token: sanitizedToken, user };
     } catch (error) {
       return rejectWithValue({ msg: error.response?.data?.msg || "Échec de l'inscription" });
     }
@@ -96,7 +90,6 @@ export const logoutUser = createAsyncThunk(
       const response = await axiosInstance.get('/user/logout');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      localStorage.removeItem('isLoggedIn');
       return response.data;
     } catch (error) {
       return rejectWithValue({ msg: error.response?.data?.msg || 'Échec de la déconnexion' });
@@ -110,15 +103,14 @@ export const refreshToken = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.get('/user/refresh_token');
-      let { token, user } = response.data;
+      const { token, user } = response.data;
 
-      token = sanitizeToken(token);
+      const sanitizedToken = sanitizeToken(token);
 
-      if (token) localStorage.setItem('token', token);
+      if (sanitizedToken) localStorage.setItem('token', sanitizedToken);
       if (user) localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('isLoggedIn', true);
 
-      return { token, user };
+      return { token: sanitizedToken, user };
     } catch (error) {
       return rejectWithValue({ msg: 'Échec de la actualisation du token' });
     }
@@ -228,16 +220,18 @@ const authSlice = createSlice({
   name: 'auth',
   initialState: {
     user: JSON.parse(localStorage.getItem('user')) || null,
-    token: sanitizeToken(localStorage.getItem('token')) || null,
+    token: sanitizeToken(localStorage.getItem('token')),
     loading: false,
     error: null,
-    isLoggedIn: localStorage.getItem('isLoggedIn') === 'true' || false,
+    isLoggedIn: !!localStorage.getItem('token'),
     allUsers: [],
     newUsers: [],
     profilePictureLoading: false,
   },
   reducers: {
-    clearError: (state) => { state.error = null; },
+    clearError: (state) => {
+      state.error = null;
+    },
     updateUserProfile: (state, action) => {
       if (state.user) {
         state.user = { ...state.user, ...action.payload };
