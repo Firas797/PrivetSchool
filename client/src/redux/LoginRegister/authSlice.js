@@ -43,7 +43,7 @@ export const getUserInfo = createAsyncThunk(
 );
 
 // Login user
-// Login user - UPDATED for real backend
+// Login user - SIMPLER VERSION
 export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async (userData, { rejectWithValue }) => {
@@ -52,39 +52,28 @@ export const loginUser = createAsyncThunk(
       const response = await axiosInstance.post('/user/login', userData);
       console.log('🔐 Login Response:', response.data);
       
-      // ✅ Handle the REAL backend response structure
       const token = response.data.token;
-      const user = response.data.user;
       
       if (!token) {
         throw new Error('No token received from server');
       }
       
-      if (!user) {
-        console.warn('⚠️ No user object in response, using minimal user data');
-        // Create minimal user object from available data
-        const minimalUser = {
-          _id: 'temp-id',
-          email: userData.email,
-          parentName: 'User',
-          isTemp: true
-        };
-        
-        localStorage.setItem('user', JSON.stringify(minimalUser));
-      } else {
-        localStorage.setItem('user', JSON.stringify(user));
-      }
+      // ✅ FIX: Create user object safely
+      const user = response.data.user || {
+        _id: 'temp-id',
+        email: userData.email,
+        parentName: 'User',
+        isTemp: true
+      };
       
+      localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('token', token);
       localStorage.setItem('isLoggedIn', 'true');
       
       console.log('✅ Token stored:', token);
-      console.log('✅ User stored:', user || 'minimal user created');
+      console.log('✅ User stored:', user);
       
-      return { 
-        token, 
-        user: user || minimalUser
-      };
+      return { token, user };
       
     } catch (error) {
       console.error('❌ Login Error:', error.response?.data || error.message);
@@ -116,12 +105,12 @@ export const registerUser = createAsyncThunk(
 );
 
 // Logout
-// Logout - FIXED to use GET
+// Logout - FIXED (using GET)
 export const logoutUser = createAsyncThunk(
   'auth/logoutUser',
   async (_, { rejectWithValue }) => {
     try {
-      // ✅ FIX: Changed to GET to match your backend route
+      // ✅ FIX: Using GET to match your backend route
       const response = await axiosInstance.get('/user/logout');
       
       localStorage.removeItem('token');
