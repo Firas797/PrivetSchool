@@ -15,13 +15,23 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
-    if (token) config.headers.Authorization = `Bearer ${token}`;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
 // ------------------------ THUNKS ------------------------ //
+
+// Helper to sanitize token
+const sanitizeToken = (token) => {
+  if (typeof token === 'string') {
+    return token.replace(/^"(.+)"$/, '$1'); // Remove extra quotes if any
+  }
+  return token;
+};
 
 // Get user info
 export const getUserInfo = createAsyncThunk(
@@ -42,10 +52,14 @@ export const loginUser = createAsyncThunk(
   async (userData, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.post('/user/login', userData);
-      const { token, user } = response.data;
+      let { token, user } = response.data;
+
+      token = sanitizeToken(token);
+
       if (token) localStorage.setItem('token', token);
       if (user) localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('isLoggedIn', true);
+
       return { token, user };
     } catch (error) {
       return rejectWithValue({ msg: error.response?.data?.msg || 'Échec de la connexion' });
@@ -59,10 +73,14 @@ export const registerUser = createAsyncThunk(
   async (userData, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.post('/user/register', userData);
-      const { token, user } = response.data;
+      let { token, user } = response.data;
+
+      token = sanitizeToken(token);
+
       if (token) localStorage.setItem('token', token);
       if (user) localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('isLoggedIn', true);
+
       return { token, user };
     } catch (error) {
       return rejectWithValue({ msg: error.response?.data?.msg || "Échec de l'inscription" });
@@ -78,7 +96,7 @@ export const logoutUser = createAsyncThunk(
       const response = await axiosInstance.get('/user/logout');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      localStorage.setItem('isLoggedIn', false);
+      localStorage.removeItem('isLoggedIn');
       return response.data;
     } catch (error) {
       return rejectWithValue({ msg: error.response?.data?.msg || 'Échec de la déconnexion' });
@@ -92,10 +110,14 @@ export const refreshToken = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.get('/user/refresh_token');
-      const { token, user } = response.data;
+      let { token, user } = response.data;
+
+      token = sanitizeToken(token);
+
       if (token) localStorage.setItem('token', token);
       if (user) localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('isLoggedIn', true);
+
       return { token, user };
     } catch (error) {
       return rejectWithValue({ msg: 'Échec de la actualisation du token' });
@@ -206,10 +228,10 @@ const authSlice = createSlice({
   name: 'auth',
   initialState: {
     user: JSON.parse(localStorage.getItem('user')) || null,
-    token: localStorage.getItem('token') || null,
+    token: sanitizeToken(localStorage.getItem('token')) || null,
     loading: false,
     error: null,
-    isLoggedIn: localStorage.getItem('isLoggedIn') === 'true' || !!localStorage.getItem('token'),
+    isLoggedIn: localStorage.getItem('isLoggedIn') === 'true' || false,
     allUsers: [],
     newUsers: [],
     profilePictureLoading: false,
@@ -249,7 +271,6 @@ const authSlice = createSlice({
         state.error = action.payload?.msg;
         toast.error(state.error);
       })
-
       // Register
       .addCase(registerUser.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(registerUser.fulfilled, (state, action) => {
@@ -264,7 +285,6 @@ const authSlice = createSlice({
         state.error = action.payload?.msg;
         toast.error(state.error);
       })
-
       // Logout
       .addCase(logoutUser.fulfilled, (state) => {
         state.user = null;
@@ -276,7 +296,6 @@ const authSlice = createSlice({
         state.error = action.payload?.msg;
         toast.error(state.error);
       })
-
       // Update profile picture
       .addCase(updateProfilePicture.pending, (state) => { state.profilePictureLoading = true; })
       .addCase(updateProfilePicture.fulfilled, (state, action) => {
@@ -296,26 +315,17 @@ const authSlice = createSlice({
         state.error = action.payload?.msg;
         toast.error(state.error);
       })
-
-      // Fetch all users
+      // Other cases
       .addCase(fetchAllUsers.fulfilled, (state, action) => { state.allUsers = action.payload; })
-
-      // Get new users
       .addCase(getNewUsers.fulfilled, (state, action) => { state.newUsers = action.payload; })
-
-      // Mark user as seen
       .addCase(markUserAsSeen.fulfilled, (state, action) => {
         const updatedUser = action.payload.user;
         state.newUsers = state.newUsers.filter(u => u._id !== updatedUser._id);
         toast.success('Utilisateur marqué comme vu');
       })
-
-      // Update quiz score
       .addCase(updateQuizScore.fulfilled, (state, action) => {
-        if (state.user) state.user.quizScores = action.payload.quizScores;
+        if (state.user) { state.user.quizScores = action.payload.quizScores; }
       })
-
-      // Refresh user data
       .addCase(refreshUserData.fulfilled, (state, action) => {
         state.user = action.payload;
         if (state.user) localStorage.setItem('user', JSON.stringify(state.user));
