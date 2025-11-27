@@ -41,12 +41,9 @@ export const loginUser = createAsyncThunk(
       const response = await axiosInstance.post('/user/login', userData);
       const { access_token, token, user } = response.data;
       const finalToken = access_token || token;
-
       if (!finalToken) throw new Error('No token returned');
-
       localStorage.setItem('token', finalToken);
       if (user) localStorage.setItem('user', JSON.stringify(user));
-
       toast.success('Login successful');
       return { user, token: finalToken };
     } catch (error) {
@@ -64,10 +61,8 @@ export const registerUser = createAsyncThunk(
       const response = await axiosInstance.post('/user/register', userData);
       const { access_token, token, user } = response.data;
       const finalToken = access_token || token;
-
       if (finalToken) localStorage.setItem('token', finalToken);
       if (user) localStorage.setItem('user', JSON.stringify(user));
-
       toast.success('Registration successful');
       return { user, token: finalToken };
     } catch (error) {
@@ -84,10 +79,8 @@ export const refreshToken = createAsyncThunk(
     try {
       const response = await axiosInstance.get('/user/refresh_token');
       const { access_token, user } = response.data;
-
       if (access_token) localStorage.setItem('token', access_token);
       if (user) localStorage.setItem('user', JSON.stringify(user));
-
       return { token: access_token, user };
     } catch (error) {
       return rejectWithValue(error.response?.data || { msg: 'Token refresh failed' });
@@ -113,11 +106,11 @@ export const updateProfilePicture = createAsyncThunk(
   'auth/updateProfilePicture',
   async ({ formData, childId = null }, { rejectWithValue }) => {
     try {
-      const url = childId
-        ? `/user/update-child-profile-picture/${childId}`
-        : '/user/update-profile-picture';
+      const url = childId ? `/user/update-child-profile-picture/${childId}` : '/user/update-profile-picture';
       const response = await axiosInstance.patch(url, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
       return { ...response.data, childId };
     } catch (error) {
@@ -153,6 +146,45 @@ export const refreshUserData = createAsyncThunk(
   }
 );
 
+// ✅ Get new users (for admin)
+export const getNewUsers = createAsyncThunk(
+  'auth/getNewUsers',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get('/user/new-inscriptions');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { msg: 'Failed to fetch new users' });
+    }
+  }
+);
+
+// ✅ Mark user as seen
+export const markUserAsSeen = createAsyncThunk(
+  'auth/markUserAsSeen',
+  async (userId, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.patch(`/user/mark-user-reviewed/${userId}`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { msg: 'Failed to mark user as seen' });
+    }
+  }
+);
+
+// ✅ Update quiz score
+export const updateQuizScore = createAsyncThunk(
+  'auth/updateQuizScore',
+  async (quizData, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.post('/user/update_quiz_score', quizData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { msg: 'Failed to update quiz score' });
+    }
+  }
+);
+
 // ✅ Logout user
 export const logoutUser = createAsyncThunk(
   'auth/logoutUser',
@@ -181,10 +213,13 @@ const authSlice = createSlice({
     error: null,
     isLoggedIn: !!localStorage.getItem('token'),
     allUsers: [],
+    newUsers: [], // Added back from previous version
     profilePictureLoading: false,
   },
   reducers: {
-    clearError: (state) => { state.error = null; },
+    clearError: (state) => {
+      state.error = null;
+    },
     updateUserProfile: (state, action) => {
       if (state.user) {
         state.user = { ...state.user, ...action.payload };
@@ -205,7 +240,10 @@ const authSlice = createSlice({
   extraReducers: (builder) => {
     builder
       // Login
-      .addCase(loginUser.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(loginUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.user;
@@ -217,9 +255,11 @@ const authSlice = createSlice({
         state.error = action.payload?.msg || 'Login failed';
         toast.error(state.error);
       })
-
       // Register
-      .addCase(registerUser.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(registerUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.user;
@@ -231,22 +271,85 @@ const authSlice = createSlice({
         state.error = action.payload?.msg || 'Registration failed';
         toast.error(state.error);
       })
-
       // Logout
       .addCase(logoutUser.fulfilled, (state) => {
         state.user = null;
         state.token = null;
         state.isLoggedIn = false;
       })
-
       // Refresh user data
       .addCase(refreshUserData.fulfilled, (state, action) => {
         state.user = action.payload;
       })
-
       // Fetch all users
       .addCase(fetchAllUsers.fulfilled, (state, action) => {
         state.allUsers = action.payload;
+      })
+      // Update profile picture
+      .addCase(updateProfilePicture.pending, (state) => {
+        state.profilePictureLoading = true;
+      })
+      .addCase(updateProfilePicture.fulfilled, (state, action) => {
+        state.profilePictureLoading = false;
+        const { profilePicture, childId } = action.payload;
+        if (state.user) {
+          if (childId && state.user.children) {
+            const childIndex = state.user.children.findIndex((child) => child._id === childId);
+            if (childIndex !== -1) {
+              state.user.children[childIndex].profilePicture = profilePicture;
+            }
+          } else {
+            state.user.profilePicture = profilePicture;
+          }
+          localStorage.setItem('user', JSON.stringify(state.user));
+        }
+        toast.success('Profile picture updated successfully');
+      })
+      .addCase(updateProfilePicture.rejected, (state, action) => {
+        state.profilePictureLoading = false;
+        state.error = action.payload?.msg || 'Profile picture update failed';
+        toast.error(state.error);
+      })
+      // Update user info
+      .addCase(updateUserInfo.fulfilled, (state, action) => {
+        if (state.user) {
+          state.user = { ...state.user, ...action.payload.user };
+          localStorage.setItem('user', JSON.stringify(state.user));
+        }
+        toast.success('Profile updated successfully');
+      })
+      .addCase(updateUserInfo.rejected, (state, action) => {
+        state.error = action.payload?.msg || 'Profile update failed';
+        toast.error(state.error);
+      })
+      // Get new users
+      .addCase(getNewUsers.fulfilled, (state, action) => {
+        state.newUsers = action.payload;
+      })
+      .addCase(getNewUsers.rejected, (state, action) => {
+        state.error = action.payload?.msg || 'Failed to fetch new users';
+      })
+      // Mark user as seen
+      .addCase(markUserAsSeen.fulfilled, (state, action) => {
+        const updatedUser = action.payload.user;
+        state.newUsers = state.newUsers.filter(user => user._id !== updatedUser._id);
+        toast.success('User marked as seen');
+      })
+      .addCase(markUserAsSeen.rejected, (state, action) => {
+        state.error = action.payload?.msg || 'Failed to mark user as seen';
+        toast.error(state.error);
+      })
+      // Update quiz score
+      .addCase(updateQuizScore.fulfilled, (state, action) => {
+        if (state.user) {
+          state.user.quizScores = action.payload.quizScores;
+          localStorage.setItem('user', JSON.stringify(state.user));
+        }
+        toast.success('Quiz score updated successfully');
+      })
+      .addCase(updateQuizScore.rejected, (state, action) => {
+        state.error = action.payload?.msg || 'Failed to update quiz score';
+        toast.error(state.error);
       });
   },
 });
