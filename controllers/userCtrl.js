@@ -184,95 +184,68 @@ register: async (req, res) => {
   }
 },
 
-// In your userCtrl.js login function - ADD THESE CONSOLE LOGS:
-login: async (req, res) => {
-  try {
-    console.log('🎯 LOGIN ENDPOINT HIT - REAL BACKEND');
-    console.log('📧 Request body:', req.body);
-    console.log('🌐 Headers:', req.headers);
-    
-    const { email, password } = req.body;
-    if (!email || !password) {
-      console.log('❌ Missing email or password');
-      return res.status(400).json({ msg: "Email et mot de passe requis" });
+ login: async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) return res.status(400).json({ msg: "Email et mot de passe requis" });
+
+      const user = await Users.findOne({ email });
+      if (!user) return res.status(400).json({ msg: "Utilisateur non trouvé." });
+
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) return res.status(400).json({ msg: "Mot de passe incorrect." });
+
+      const accessToken = createAccessToken({ id: user._id, role: user.role });
+      const refreshToken = createRefreshToken({ id: user._id, role: user.role });
+      await Users.findByIdAndUpdate(user._id, { refreshToken });
+
+      res.cookie('refreshtoken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/user/refresh_token',
+        maxAge: 7 * 24 * 60 * 60 * 1000
+      });
+
+      const userResponse = {
+        _id: user._id,
+        parentName: user.parentName,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        address: user.address,
+        plan: user.plan,
+        children: user.children,
+        role: user.role
+      };
+
+      res.json({ msg: "Connexion réussie", token: accessToken, user: userResponse });
+    } catch (err) {
+      console.error('Erreur login:', err);
+      return res.status(500).json({ msg: "Erreur serveur" });
     }
+  },
 
-    const user = await Users.findOne({ email });
-    if (!user) {
-      console.log('❌ User not found in database:', email);
-      return res.status(400).json({ msg: "Utilisateur non trouvé." });
+   logout: async (req, res) => {
+    try {
+      const refreshToken = req.cookies.refreshtoken;
+      if (!refreshToken) return res.status(400).json({ msg: "Pas de token trouvé" });
+
+      const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+      await Users.findByIdAndUpdate(decoded.id, { $unset: { refreshToken: 1 } });
+
+      res.clearCookie('refreshtoken', { 
+        path: '/user/refresh_token',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+
+      return res.json({ msg: "Déconnexion réussie" });
+    } catch (err) {
+      console.error('Erreur logout:', err);
+      return res.status(500).json({ msg: err.message });
     }
-
-    console.log('✅ User found:', user.email);
-    
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      console.log('❌ Password does not match');
-      return res.status(400).json({ msg: "Mot de passe incorrect." });
-    }
-
-    console.log('✅ Password matched, generating tokens...');
-    
-    const accessToken = createAccessToken({ id: user._id, role: user.role });
-    const refreshToken = createRefreshToken({ id: user._id, role: user.role });
-    await Users.findByIdAndUpdate(user._id, { refreshToken });
-
-    console.log('✅ Tokens generated, setting cookie...');
-    
-    res.cookie('refreshtoken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    const userResponse = {
-      _id: user._id,
-      parentName: user.parentName,
-      email: user.email,
-      phoneNumber: user.phoneNumber,
-      address: user.address,
-      plan: user.plan,
-      children: user.children,
-      role: user.role
-    };
-
-    console.log('✅ Login successful, sending response for user:', user.email);
-    
-    res.json({ 
-      msg: "Connexion réussie", 
-      token: accessToken, 
-      user: userResponse 
-    });
-    
-  } catch (err) {
-    console.error('❌ Login error:', err);
-    return res.status(500).json({ msg: "Erreur serveur" });
-  }
-},
-
-logout: async (req, res) => {
-  try {
-    const refreshToken = req.cookies.refreshtoken;
-    if (!refreshToken) return res.status(400).json({ msg: "Pas de token trouvé" });
-
-    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-    await Users.findByIdAndUpdate(decoded.id, { $unset: { refreshToken: 1 } });
-
-    // ✅ FIX: Match cookie clear with login settings
-    res.clearCookie('refreshtoken', { 
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      // Same settings as login cookie
-    });
-
-    return res.json({ msg: "Déconnexion réussie" });
-  } catch (err) {
-    console.error('Erreur logout:', err);
-    return res.status(500).json({ msg: err.message });
-  }
-},
+  },
 
     refreshToken: async (req, res) => {
     try {
