@@ -184,70 +184,76 @@ register: async (req, res) => {
   }
 },
 
- login: async (req, res) => {
-    try {
-      const { email, password } = req.body;
-      if (!email || !password) return res.status(400).json({ msg: "Email et mot de passe requis" });
+login: async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ msg: "Email et mot de passe requis" });
 
-      const user = await Users.findOne({ email });
-      if (!user) return res.status(400).json({ msg: "Utilisateur non trouvé." });
+    const user = await Users.findOne({ email });
+    if (!user) return res.status(400).json({ msg: "Utilisateur non trouvé." });
 
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) return res.status(400).json({ msg: "Mot de passe incorrect." });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ msg: "Mot de passe incorrect." });
 
-      const accessToken = createAccessToken({ id: user._id, role: user.role });
-      const refreshToken = createRefreshToken({ id: user._id, role: user.role });
-      await Users.findByIdAndUpdate(user._id, { refreshToken });
+    const accessToken = createAccessToken({ id: user._id, role: user.role });
+    const refreshToken = createRefreshToken({ id: user._id, role: user.role });
+    await Users.findByIdAndUpdate(user._id, { refreshToken });
 
-     res.cookie('refreshtoken', refreshToken, {
-  httpOnly: true,
-  secure: true, // Force HTTPS in production
-  sameSite: 'none', // Changed from 'strict' for cross-domain
-  path: '/user/refresh_token',
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-  domain: '.ohbjmh.easypanel.host' // Add domain for subdomain sharing
-});
+    // ✅ FIX: Simplified cookie configuration
+    res.cookie('refreshtoken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // Dynamic based on environment
+      sameSite: 'lax', // Better for cross-origin requests
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      // Remove domain if you're having cross-domain issues
+    });
 
-      const userResponse = {
-        _id: user._id,
-        parentName: user.parentName,
-        email: user.email,
-        phoneNumber: user.phoneNumber,
-        address: user.address,
-        plan: user.plan,
-        children: user.children,
-        role: user.role
-      };
+    const userResponse = {
+      _id: user._id,
+      parentName: user.parentName,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      address: user.address,
+      plan: user.plan,
+      children: user.children,
+      role: user.role
+    };
 
-      res.json({ msg: "Connexion réussie", token: accessToken, user: userResponse });
-    } catch (err) {
-      console.error('Erreur login:', err);
-      return res.status(500).json({ msg: "Erreur serveur" });
-    }
-  },
+    // ✅ FIX: Make sure response structure matches frontend expectation
+    res.json({ 
+      msg: "Connexion réussie", 
+      token: accessToken, 
+      user: userResponse 
+    });
+    
+  } catch (err) {
+    console.error('Erreur login:', err);
+    return res.status(500).json({ msg: "Erreur serveur" });
+  }
+},
 
-   logout: async (req, res) => {
-    try {
-      const refreshToken = req.cookies.refreshtoken;
-      if (!refreshToken) return res.status(400).json({ msg: "Pas de token trouvé" });
+logout: async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshtoken;
+    if (!refreshToken) return res.status(400).json({ msg: "Pas de token trouvé" });
 
-      const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-      await Users.findByIdAndUpdate(decoded.id, { $unset: { refreshToken: 1 } });
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    await Users.findByIdAndUpdate(decoded.id, { $unset: { refreshToken: 1 } });
 
-     res.clearCookie('refreshtoken', { 
-  path: '/user/refresh_token',
-  httpOnly: true,
-  secure: true,
-  sameSite: 'none',
-  domain: '.ohbjmh.easypanel.host' // Same domain as above
-});
+    // ✅ FIX: Match cookie clear with login settings
+    res.clearCookie('refreshtoken', { 
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      // Same settings as login cookie
+    });
 
-      return res.json({ msg: "Déconnexion réussie" });
-    } catch (err) {
-      console.error('Erreur logout:', err);
-      return res.status(500).json({ msg: err.message });
-    }
-  },
+    return res.json({ msg: "Déconnexion réussie" });
+  } catch (err) {
+    console.error('Erreur logout:', err);
+    return res.status(500).json({ msg: err.message });
+  }
+},
 
     refreshToken: async (req, res) => {
     try {
