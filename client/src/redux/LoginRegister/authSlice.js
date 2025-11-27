@@ -225,13 +225,12 @@ export const logoutUser = createAsyncThunk(
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
-    user: JSON.parse(localStorage.getItem('user')) || null,
+    user: JSON.parse(localStorage.getItem('user')) || null, // load user from localStorage
     token: localStorage.getItem('token') || null,
     loading: false,
     error: null,
     isLoggedIn: !!localStorage.getItem('token'),
     allUsers: [],
-    newUsers: [],
     profilePictureLoading: false,
   },
   reducers: {
@@ -240,8 +239,8 @@ const authSlice = createSlice({
       state.token = null;
       state.isLoggedIn = false;
       localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      toast.info('Déconnexion réussie');
+      localStorage.removeItem('user'); // remove user
+      toast.info('Logged out successfully');
     },
     clearError: (state) => {
       state.error = null;
@@ -249,7 +248,7 @@ const authSlice = createSlice({
     updateUserProfile: (state, action) => {
       if (state.user) {
         state.user = { ...state.user, ...action.payload };
-        localStorage.setItem('user', JSON.stringify(state.user));
+        localStorage.setItem('user', JSON.stringify(state.user)); // update localStorage
       }
     },
     updateChildProfile: (state, action) => {
@@ -261,14 +260,14 @@ const authSlice = createSlice({
             ...state.user.children[childIndex],
             ...updates,
           };
-          localStorage.setItem('user', JSON.stringify(state.user));
+          localStorage.setItem('user', JSON.stringify(state.user)); // update localStorage
         }
       }
     },
   },
   extraReducers: (builder) => {
     builder
-      // Connexion
+      // Login
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -279,15 +278,15 @@ const authSlice = createSlice({
         state.token = action.payload.token;
         state.isLoggedIn = true;
         if (state.user) localStorage.setItem('user', JSON.stringify(state.user));
-        toast.success('Connexion réussie');
+        toast.success('Logged in successfully');
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.msg || 'Échec de la connexion';
+        state.error = action.payload?.msg || 'Login failed';
         toast.error(state.error);
       })
 
-      // Inscription
+      // Register
       .addCase(registerUser.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -298,30 +297,26 @@ const authSlice = createSlice({
         state.token = action.payload.token;
         state.isLoggedIn = true;
         if (state.user) localStorage.setItem('user', JSON.stringify(state.user));
-        toast.success('Inscription réussie !');
+        toast.success('Registration successful!');
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.msg || "Échec de l'inscription";
+        state.error = action.payload?.msg || 'Registration failed';
         toast.error(state.error);
       })
 
-      // Récupérer tous les utilisateurs
+      // Fetch all users
       .addCase(fetchAllUsers.fulfilled, (state, action) => {
         state.loading = false;
         state.allUsers = action.payload;
       })
       .addCase(fetchAllUsers.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.msg || 'Échec de la récupération des utilisateurs';
+        state.error = action.payload?.msg || 'Fetching users failed';
       })
 
-      // Mettre à jour la photo de profil
-      .addCase(updateProfilePicture.pending, (state) => {
-        state.profilePictureLoading = true;
-      })
+      // Update profile picture
       .addCase(updateProfilePicture.fulfilled, (state, action) => {
-        state.profilePictureLoading = false;
         const { profilePicture, childId } = action.payload;
         if (state.user) {
           if (childId && state.user.children) {
@@ -332,82 +327,28 @@ const authSlice = createSlice({
           } else {
             state.user.profilePicture = profilePicture;
           }
-          localStorage.setItem('user', JSON.stringify(state.user));
+          localStorage.setItem('user', JSON.stringify(state.user)); // save user
         }
-        toast.success('Photo de profil mise à jour avec succès');
+        toast.success('Profile picture updated successfully');
       })
       .addCase(updateProfilePicture.rejected, (state, action) => {
-        state.profilePictureLoading = false;
-        state.error = action.payload?.msg || 'Échec de la mise à jour de la photo de profil';
+        state.error = action.payload?.msg || 'Failed to update profile picture';
         toast.error(state.error);
       })
 
-      // Mettre à jour les informations utilisateur
+      // Update user info
       .addCase(updateUserInfo.fulfilled, (state, action) => {
         if (state.user) {
           state.user = { ...state.user, ...action.payload.user };
           localStorage.setItem('user', JSON.stringify(state.user));
         }
-        toast.success('Profil mis à jour avec succès');
-      })
-      .addCase(updateUserInfo.rejected, (state, action) => {
-        state.error = action.payload?.msg || 'Échec de la mise à jour du profil';
-        toast.error(state.error);
+        toast.success('Profile updated successfully');
       })
 
-      // Actualiser les données utilisateur
+      // Refresh user data
       .addCase(refreshUserData.fulfilled, (state, action) => {
         state.user = action.payload;
         if (state.user) localStorage.setItem('user', JSON.stringify(state.user));
-      })
-      .addCase(refreshUserData.rejected, (state, action) => {
-        state.error = action.payload?.msg || 'Échec de la actualisation des données';
-      })
-
-      // Récupérer les nouveaux utilisateurs
-      .addCase(getNewUsers.fulfilled, (state, action) => {
-        state.newUsers = action.payload;
-      })
-      .addCase(getNewUsers.rejected, (state, action) => {
-        state.error = action.payload?.msg || 'Échec de la récupération des nouveaux utilisateurs';
-      })
-
-      // Marquer l'utilisateur comme vu
-      .addCase(markUserAsSeen.fulfilled, (state, action) => {
-        const updatedUser = action.payload.user;
-        state.newUsers = state.newUsers.filter(user => user._id !== updatedUser._id);
-        toast.success('Utilisateur marqué comme vu');
-      })
-      .addCase(markUserAsSeen.rejected, (state, action) => {
-        state.error = action.payload?.msg || 'Échec du marquage de l\'utilisateur';
-        toast.error(state.error);
-      })
-
-      // Mettre à jour le score du quiz
-      .addCase(updateQuizScore.fulfilled, (state, action) => {
-        if (state.user) {
-          state.user.quizScores = action.payload.quizScores;
-          localStorage.setItem('user', JSON.stringify(state.user));
-        }
-        toast.success('Score mis à jour avec succès');
-      })
-      .addCase(updateQuizScore.rejected, (state, action) => {
-        state.error = action.payload?.msg || 'Échec de la mise à jour du score';
-        toast.error(state.error);
-      })
-
-      // Déconnexion
-      .addCase(logoutUser.fulfilled, (state) => {
-        state.user = null;
-        state.token = null;
-        state.isLoggedIn = false;
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        toast.info('Déconnexion réussie');
-      })
-      .addCase(logoutUser.rejected, (state, action) => {
-        state.error = action.payload?.msg || 'Échec de la déconnexion';
-        toast.error(state.error);
       });
   },
 });
