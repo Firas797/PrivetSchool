@@ -1,25 +1,30 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
 import { toast } from 'react-toastify';
+import axios from 'axios';
 
-// ✅ Backend URL
+// ================== AXIOS INSTANCE ==================
 const API_BASE_URL = 'https://privetschool-backend.ohbjmh.easypanel.host';
-axios.defaults.baseURL = API_BASE_URL;
 
-// Request interceptor to attach token
-axios.interceptors.request.use((config) => {
+const axiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true, // allow cookies if backend uses them
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Attach token to every request
+axiosInstance.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// Safe localStorage parser
+// ================== SAFE LOCALSTORAGE ==================
 const getSafeUserFromStorage = () => {
   try {
     const userStr = localStorage.getItem('user');
-    return userStr ? JSON.parse(userStr) : null;
+    return userStr && userStr !== 'undefined' ? JSON.parse(userStr) : null;
   } catch (error) {
     localStorage.removeItem('user');
     return null;
@@ -33,7 +38,7 @@ export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/user/login', userData);
+      const response = await axiosInstance.post('/user/login', userData);
       const { access_token, token, user } = response.data;
       const finalToken = access_token || token;
 
@@ -56,7 +61,7 @@ export const registerUser = createAsyncThunk(
   'auth/registerUser',
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/user/register', userData);
+      const response = await axiosInstance.post('/user/register', userData);
       const { access_token, token, user } = response.data;
       const finalToken = access_token || token;
 
@@ -77,7 +82,7 @@ export const refreshToken = createAsyncThunk(
   'auth/refreshToken',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get('/user/refresh_token');
+      const response = await axiosInstance.get('/user/refresh_token');
       const { access_token, user } = response.data;
 
       if (access_token) localStorage.setItem('token', access_token);
@@ -95,7 +100,7 @@ export const fetchAllUsers = createAsyncThunk(
   'auth/fetchAllUsers',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get('/user/all_users');
+      const response = await axiosInstance.get('/user/all_users');
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || { msg: 'Fetching users failed' });
@@ -111,7 +116,7 @@ export const updateProfilePicture = createAsyncThunk(
       const url = childId
         ? `/user/update-child-profile-picture/${childId}`
         : '/user/update-profile-picture';
-      const response = await axios.patch(url, formData, {
+      const response = await axiosInstance.patch(url, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       return { ...response.data, childId };
@@ -126,7 +131,7 @@ export const updateUserInfo = createAsyncThunk(
   'auth/updateUserInfo',
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await axios.patch('/user/update', userData);
+      const response = await axiosInstance.patch('/user/update', userData);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || { msg: 'Update failed' });
@@ -139,7 +144,7 @@ export const refreshUserData = createAsyncThunk(
   'auth/refreshUserData',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get('/user/infor');
+      const response = await axiosInstance.get('/user/infor');
       if (response.data) localStorage.setItem('user', JSON.stringify(response.data));
       return response.data || null;
     } catch (error) {
@@ -153,7 +158,7 @@ export const logoutUser = createAsyncThunk(
   'auth/logoutUser',
   async (_, { rejectWithValue }) => {
     try {
-      await axios.get('/user/logout').catch(() => null); // optional backend logout
+      await axiosInstance.get('/user/logout').catch(() => null); // optional backend logout
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       toast.info('Logged out successfully');
@@ -179,9 +184,7 @@ const authSlice = createSlice({
     profilePictureLoading: false,
   },
   reducers: {
-    clearError: (state) => {
-      state.error = null;
-    },
+    clearError: (state) => { state.error = null; },
     updateUserProfile: (state, action) => {
       if (state.user) {
         state.user = { ...state.user, ...action.payload };
@@ -202,10 +205,7 @@ const authSlice = createSlice({
   extraReducers: (builder) => {
     builder
       // Login
-      .addCase(loginUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
+      .addCase(loginUser.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.user;
@@ -219,10 +219,7 @@ const authSlice = createSlice({
       })
 
       // Register
-      .addCase(registerUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
+      .addCase(registerUser.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.user;
