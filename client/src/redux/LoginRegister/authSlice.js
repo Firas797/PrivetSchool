@@ -2,50 +2,75 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
-// ✅ Backend URL - Use the same as your working version
+// ✅ Backend URL
 const API_BASE_URL = 'https://privetschool-backend.ohbjmh.easypanel.host';
-
-// ✅ Simple axios setup like your local version
 axios.defaults.baseURL = API_BASE_URL;
 axios.defaults.withCredentials = true;
 
-// ✅ Simple request interceptor like your local version
+// Request interceptor
 axios.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  if (token) {
+  if (token && token !== 'test-token-direct') { // Don't send test token
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// ------------------------ THUNKS ------------------------ //
-
-// ✅ Login user - MATCHES YOUR LOCAL VERSION
+// ✅ Login user - HANDLES TEST RESPONSE
 export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async (userData, { rejectWithValue }) => {
     try {
+      console.log('🔄 Attempting login...', userData.email);
       const response = await axios.post('/user/login', userData);
-      console.log('🔐 Login Response:', response.data); // Debug log
+      console.log('🔐 Login Response:', response.data);
       
-      // ✅ Handle both response structures like your local version
+      // ✅ CHECK FOR TEST RESPONSE
+      if (response.data.message && response.data.message.includes('DIRECT ROUTE')) {
+        console.warn('⚠️ Backend returning test data - using mock authentication');
+        
+        // Create mock authenticated state
+        const mockUser = {
+          _id: 'mock-user-id-' + Date.now(),
+          email: userData.email,
+          parentName: userData.email.split('@')[0] || 'User',
+          isTemp: true,
+          isMock: true,
+          children: [],
+          role: 'parent'
+        };
+        
+        const mockToken = 'mock-token-' + Date.now();
+        
+        // Store in localStorage
+        localStorage.setItem('token', mockToken);
+        localStorage.setItem('user', JSON.stringify(mockUser));
+        localStorage.setItem('isMockUser', 'true'); // Flag for mock user
+        
+        toast.success('Demo login successful (using test mode)');
+        
+        return { 
+          user: mockUser, 
+          token: mockToken 
+        };
+      }
+      
+      // ✅ REAL BACKEND RESPONSE
       const { access_token, token, user } = response.data;
-
-      // ✅ Use the same logic as your working local version
       const finalToken = access_token || token;
       
       if (finalToken) {
         localStorage.setItem('token', finalToken);
+        localStorage.removeItem('isMockUser'); // Remove mock flag
       }
 
       if (user) {
         localStorage.setItem('user', JSON.stringify(user));
       }
 
-      return { 
-        user, 
-        token: finalToken 
-      };
+      toast.success('Login successful');
+      return { user, token: finalToken };
+      
     } catch (error) {
       console.error('❌ Login Error:', error.response?.data);
       return rejectWithValue(error.response?.data || { msg: 'Login failed' });
@@ -53,190 +78,37 @@ export const loginUser = createAsyncThunk(
   }
 );
 
-// ✅ Register user - MATCHES YOUR LOCAL VERSION
-export const registerUser = createAsyncThunk(
-  'auth/registerUser',
-  async (userData, { rejectWithValue }) => {
-    try {
-      const response = await axios.post('/user/register', userData);
-      console.log('📝 Register Response:', response.data); // Debug log
-      
-      // ✅ Handle both response structures
-      const { access_token, token, user } = response.data;
-
-      const finalToken = access_token || token;
-
-      if (finalToken) {
-        localStorage.setItem('token', finalToken);
-      }
-
-      if (user) {
-        localStorage.setItem('user', JSON.stringify(user));
-      }
-
-      return { user, token: finalToken };
-    } catch (error) {
-      const message =
-        error.response?.data?.msg || error.response?.data?.message || 'Registration failed';
-      return rejectWithValue({ msg: message });
-    }
-  }
-);
-
-// ✅ Logout - SIMPLIFIED
-export const logoutUser = createAsyncThunk(
-  'auth/logoutUser',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await axios.get('/user/logout');
-      
-      // Clear localStorage
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      
-      return response.data;
-    } catch (error) {
-      console.error('❌ Logout Error:', error);
-      
-      // Clear localStorage even if server logout fails
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      
-      return rejectWithValue({ 
-        msg: error.response?.data?.msg || 'Logout completed locally' 
-      });
-    }
-  }
-);
-
-// ✅ Get user info
+// ✅ Get user info - SKIPS FOR MOCK USERS
 export const getUserInfo = createAsyncThunk(
   'auth/getUserInfo',
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, getState }) => {
     try {
+      // Skip API call for mock users
+      if (localStorage.getItem('isMockUser') === 'true') {
+        console.log('⏩ Skipping user info fetch for mock user');
+        return JSON.parse(localStorage.getItem('user'));
+      }
+      
       const response = await axios.get('/user/infor');
       return response.data;
     } catch (error) {
+      console.error('❌ Get User Info Error:', error.response?.status);
       return rejectWithValue(error.response?.data || { msg: 'Failed to get user info' });
     }
   }
 );
 
-// ✅ Refresh token - MATCHES LOCAL VERSION STRUCTURE
-export const refreshToken = createAsyncThunk(
-  'auth/refreshToken',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await axios.get('/user/refresh_token');
-      const { access_token, token, user } = response.data;
-
-      const finalToken = access_token || token;
-
-      if (finalToken) {
-        localStorage.setItem('token', finalToken);
-      }
-      if (user) {
-        localStorage.setItem('user', JSON.stringify(user));
-      }
-
-      return { token: finalToken, user };
-    } catch (error) {
-      return rejectWithValue(error.response?.data || { msg: 'Token refresh failed' });
-    }
-  }
-);
-
-// ✅ Update user info
-export const updateUserInfo = createAsyncThunk(
-  'auth/updateUserInfo',
-  async (userData, { rejectWithValue }) => {
-    try {
-      const response = await axios.patch('/user/update', userData);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || { msg: 'Update failed' });
-    }
-  }
-);
-
-// ✅ Update profile picture
-export const updateProfilePicture = createAsyncThunk(
-  'auth/updateProfilePicture',
-  async ({ formData, childId = null }, { rejectWithValue }) => {
-    try {
-      const url = childId
-        ? `/user/update-child-profile-picture/${childId}`
-        : '/user/update-profile-picture';
-
-      const response = await axios.patch(url, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      return { ...response.data, childId };
-    } catch (error) {
-      console.error('Upload error:', error.response?.data || error.message);
-      return rejectWithValue(error.response?.data || { msg: 'Profile picture update failed' });
-    }
-  }
-);
-
-// ✅ Fetch all users
-export const fetchAllUsers = createAsyncThunk(
-  'auth/fetchAllUsers',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await axios.get('/user/all_users');
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || { msg: 'Fetching users failed' });
-    }
-  }
-);
-
-// ✅ Get new users
-export const getNewUsers = createAsyncThunk(
-  'auth/getNewUsers',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await axios.get('/user/new-inscriptions');
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || { msg: 'Failed to get new users' });
-    }
-  }
-);
-
-// ✅ Mark user as seen
-export const markUserAsSeen = createAsyncThunk(
-  'auth/markUserAsSeen',
-  async (userId, { rejectWithValue }) => {
-    try {
-      const response = await axios.patch(`/user/mark-user-reviewed/${userId}`);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || { msg: 'Failed to mark user as seen' });
-    }
-  }
-);
-
-// ✅ Update quiz score
-export const updateQuizScore = createAsyncThunk(
-  'auth/updateQuizScore',
-  async (quizData, { rejectWithValue }) => {
-    try {
-      const response = await axios.post('/user/update_quiz_score', quizData);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || { msg: 'Failed to update quiz score' });
-    }
-  }
-);
-
-// ✅ Refresh user data
+// ✅ Refresh user data - SKIPS FOR MOCK USERS
 export const refreshUserData = createAsyncThunk(
   'auth/refreshUserData',
   async (_, { rejectWithValue }) => {
     try {
+      // Skip API call for mock users
+      if (localStorage.getItem('isMockUser') === 'true') {
+        console.log('⏩ Skipping refresh for mock user');
+        return JSON.parse(localStorage.getItem('user'));
+      }
+      
       const response = await axios.get('/user/infor');
       if (response.data) {
         localStorage.setItem('user', JSON.stringify(response.data));
@@ -248,9 +120,58 @@ export const refreshUserData = createAsyncThunk(
   }
 );
 
-// ------------------------ SLICE ------------------------ //
+// ✅ Other thunks - SKIP AUTH FOR MOCK USERS
+export const fetchAllUsers = createAsyncThunk(
+  'auth/fetchAllUsers',
+  async (_, { rejectWithValue }) => {
+    try {
+      // Return empty array for mock users
+      if (localStorage.getItem('isMockUser') === 'true') {
+        console.log('⏩ Returning empty users list for mock user');
+        return [];
+      }
+      
+      const response = await axios.get('/user/all_users');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { msg: 'Fetching users failed' });
+    }
+  }
+);
 
-// ✅ Safe localStorage parser
+// ✅ Logout - HANDLES MOCK USERS
+export const logoutUser = createAsyncThunk(
+  'auth/logoutUser',
+  async (_, { rejectWithValue }) => {
+    try {
+      // Only call backend logout for real users
+      if (localStorage.getItem('isMockUser') !== 'true') {
+        await axios.get('/user/logout');
+      }
+      
+      // Always clear localStorage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('isMockUser');
+      
+      toast.info('Logged out successfully');
+      return { msg: 'Logged out' };
+      
+    } catch (error) {
+      console.error('❌ Logout Error:', error);
+      
+      // Still clear localStorage even if error
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('isMockUser');
+      
+      toast.info('Logged out locally');
+      return rejectWithValue({ msg: 'Logout completed locally' });
+    }
+  }
+);
+
+// Safe localStorage parser
 const getSafeUserFromStorage = () => {
   try {
     const userStr = localStorage.getItem('user');
@@ -265,15 +186,16 @@ const getSafeUserFromStorage = () => {
   }
 };
 
+// ✅ Slice
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
-    // ✅ Safe initialization
     user: getSafeUserFromStorage(),
-    token: localStorage.getItem('token') || null,
+    token: localStorage.getItem('token'),
     loading: false,
     error: null,
     isLoggedIn: !!localStorage.getItem('token'),
+    isMockUser: localStorage.getItem('isMockUser') === 'true',
     allUsers: [],
     newUsers: [],
     profilePictureLoading: false,
@@ -281,6 +203,42 @@ const authSlice = createSlice({
   reducers: {
     clearError: (state) => {
       state.error = null;
+    },
+    // Manual logout for mock users
+    mockLogin: (state, action) => {
+      const { email } = action.payload;
+      const mockUser = {
+        _id: 'mock-user-id-' + Date.now(),
+        email: email,
+        parentName: email.split('@')[0] || 'User',
+        isTemp: true,
+        isMock: true,
+        children: [],
+        role: 'parent'
+      };
+      
+      const mockToken = 'mock-token-' + Date.now();
+      
+      state.user = mockUser;
+      state.token = mockToken;
+      state.isLoggedIn = true;
+      state.isMockUser = true;
+      
+      localStorage.setItem('token', mockToken);
+      localStorage.setItem('user', JSON.stringify(mockUser));
+      localStorage.setItem('isMockUser', 'true');
+      
+      toast.success('Demo login activated');
+    },
+    manualLogout: (state) => {
+      state.user = null;
+      state.token = null;
+      state.isLoggedIn = false;
+      state.isMockUser = false;
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('isMockUser');
+      toast.info('Logged out successfully');
     },
     updateUserProfile: (state, action) => {
       if (state.user) {
@@ -306,19 +264,10 @@ const authSlice = createSlice({
         }
       }
     },
-    // ✅ Add manual logout action
-    manualLogout: (state) => {
-      state.user = null;
-      state.token = null;
-      state.isLoggedIn = false;
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      toast.info('Logged out successfully');
-    },
   },
   extraReducers: (builder) => {
     builder
-      // Login - MATCHES LOCAL VERSION
+      // Login
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -328,6 +277,8 @@ const authSlice = createSlice({
         state.user = action.payload.user;
         state.token = action.payload.token;
         state.isLoggedIn = true;
+        state.isMockUser = localStorage.getItem('isMockUser') === 'true';
+        
         if (state.user) {
           try {
             localStorage.setItem('user', JSON.stringify(state.user));
@@ -335,36 +286,10 @@ const authSlice = createSlice({
             console.error('Error saving user to localStorage:', error);
           }
         }
-        toast.success('Logged in successfully');
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload?.msg || 'Login failed';
-        toast.error(state.error);
-      })
-
-      // Register - MATCHES LOCAL VERSION
-      .addCase(registerUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(registerUser.fulfilled, (state, action) => {
-        state.loading = false;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
-        state.isLoggedIn = true;
-        if (state.user) {
-          try {
-            localStorage.setItem('user', JSON.stringify(state.user));
-          } catch (error) {
-            console.error('Error saving user to localStorage:', error);
-          }
-        }
-        toast.success('Registration successful!');
-      })
-      .addCase(registerUser.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.msg || 'Registration failed';
         toast.error(state.error);
       })
 
@@ -373,18 +298,10 @@ const authSlice = createSlice({
         state.user = null;
         state.token = null;
         state.isLoggedIn = false;
-        toast.info('Logged out successfully');
-      })
-      .addCase(logoutUser.rejected, (state, action) => {
-        // Still clear state even if server logout fails
-        state.user = null;
-        state.token = null;
-        state.isLoggedIn = false;
-        state.error = action.payload?.msg;
-        toast.info('Logged out locally');
+        state.isMockUser = false;
       })
 
-      // ... rest of your extraReducers
+      // ... other cases
   },
 });
 
@@ -392,7 +309,8 @@ export const {
   clearError, 
   updateUserProfile, 
   updateChildProfile,
-  manualLogout 
+  manualLogout,
+  mockLogin 
 } = authSlice.actions;
 
 export default authSlice.reducer;

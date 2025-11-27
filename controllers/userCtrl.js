@@ -184,46 +184,59 @@ register: async (req, res) => {
   }
 },
 
- login: async (req, res) => {
-    try {
-      const { email, password } = req.body;
-      if (!email || !password) return res.status(400).json({ msg: "Email et mot de passe requis" });
+  login: async (req, res) => {
+        try {
+            const { email, password } = req.body;
 
-      const user = await Users.findOne({ email });
-      if (!user) return res.status(400).json({ msg: "Utilisateur non trouvé." });
+            if (!email || !password) {
+                return res.status(400).json({ msg: "Veuillez fournir un email et un mot de passe" });
+            }
 
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) return res.status(400).json({ msg: "Mot de passe incorrect." });
+            const user = await Users.findOne({ email });
+            if (!user) return res.status(400).json({ msg: "Utilisateur non trouvé." });
 
-      const accessToken = createAccessToken({ id: user._id, role: user.role });
-      const refreshToken = createRefreshToken({ id: user._id, role: user.role });
-      await Users.findByIdAndUpdate(user._id, { refreshToken });
+            const isMatch = await user.comparePassword(password);
+            if (!isMatch) return res.status(400).json({ msg: "Mot de passe incorrect." });
 
-      res.cookie('refreshtoken', refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        path: '/user/refresh_token',
-        maxAge: 7 * 24 * 60 * 60 * 1000
-      });
+            // Génération des tokens
+            const accessToken = createAccessToken({ id: user._id, role: user.role });
+            const refreshToken = createRefreshToken({ id: user._id, role: user.role });
 
-      const userResponse = {
-        _id: user._id,
-        parentName: user.parentName,
-        email: user.email,
-        phoneNumber: user.phoneNumber,
-        address: user.address,
-        plan: user.plan,
-        children: user.children,
-        role: user.role
-      };
+            // Mise à jour du refresh token en base
+            await Users.findByIdAndUpdate(user._id, { refreshToken });
 
-      res.json({ msg: "Connexion réussie", token: accessToken, user: userResponse });
-    } catch (err) {
-      console.error('Erreur login:', err);
-      return res.status(500).json({ msg: "Erreur serveur" });
-    }
-  },
+            // Configuration du cookie
+            res.cookie('refreshtoken', refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
+                path: '/user/refresh_token',
+                maxAge: 7 * 24 * 60 * 60 * 1000 // 7 jours
+            });
+
+            // Préparation de la réponse
+            const userResponse = {
+                _id: user._id,
+                parentName: user.parentName,
+                email: user.email,
+                phoneNumber: user.phoneNumber,
+                address: user.address,
+                plan: user.plan,
+                children: user.children,
+                role: user.role
+            };
+
+            res.json({
+                msg: "Connexion réussie",
+                token: accessToken,
+                user: userResponse
+            });
+
+        } catch (err) {
+            console.error('Erreur lors de la connexion:', err);
+            return res.status(500).json({ msg: "Erreur serveur" });
+        }
+    },
 
    logout: async (req, res) => {
     try {
