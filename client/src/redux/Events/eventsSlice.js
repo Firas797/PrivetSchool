@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-const API_URL = 'https://privetschool-backend.ohbjmh.easypanel.host/api/events';
+const API_URL = 'https://57.131.24.227/api/events';
 
 // Async thunks
 export const fetchEvents = createAsyncThunk(
