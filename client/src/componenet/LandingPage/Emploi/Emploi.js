@@ -26,7 +26,7 @@ function Emploi() {
 
       const results = await Promise.all(
         classes.map(async (classe) => {
-          const res = await fetch(`https://57.131.24.227/api/emplois/${classe}`);
+          const res = await fetch(`https://privetschool-backend.ohbjmh.easypanel.host/api/emplois/${classe}`);
           if (!res.ok) return { error: true, className: classe };
           const data = await res.json();
           return data;
