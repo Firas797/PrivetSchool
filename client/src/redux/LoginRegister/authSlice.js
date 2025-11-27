@@ -4,42 +4,44 @@ import { toast } from 'react-toastify';
 
 // ✅ CORRIGÉ: Utiliser l'URL de votre backend
 const API_BASE_URL = 'https://privetschool-backend.ohbjmh.easypanel.host';
-// Configure axios defaults
-axios.defaults.baseURL = API_BASE_URL;
-axios.defaults.withCredentials = true; // This is crucial for cookies
-axios.defaults.headers.common['Content-Type'] = 'application/json';
-
-// Request interceptor
-axios.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+// Create axios instance with proper configuration
+const axiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
 });
 
-// Response interceptor to handle token refresh
-axios.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401) {
-      // Token expired, try to refresh
-      try {
-        const response = await axios.get('/user/refresh_token');
-        const newToken = response.data.token;
-        localStorage.setItem('token', newToken);
-        
-        // Retry original request
-        error.config.headers.Authorization = `Bearer ${newToken}`;
-        return axios.request(error.config);
-      } catch (refreshError) {
-        // Refresh failed, logout user
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
-      }
+// FIXED Request interceptor - this is CRITICAL
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    console.log('🔐 Interceptor - Token from localStorage:', token);
+    
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log('✅ Authorization header set:', config.headers.Authorization);
+    } else {
+      console.log('❌ No token found in localStorage');
     }
+    
+    console.log('🚀 Making request to:', config.method?.toUpperCase(), config.url);
+    return config;
+  },
+  (error) => {
     return Promise.reject(error);
+  }
+);
+
+// Use this axiosInstance for ALL your API calls
+export const getUserInfo = createAsyncThunk(
+  'auth/getUserInfo',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get('/user/infor');
+      return response.data;
+    } catch (error) {
+      console.log('❌ getUserInfo failed:', error.response?.data);
+      return rejectWithValue({ msg: error.response?.data?.msg || 'Failed to get user info' });
+    }
   }
 );
 
