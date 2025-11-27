@@ -2,34 +2,36 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
-// ✅ Backend URL
+// ✅ CORRIGÉ: Utiliser l'URL de votre backend
 const API_BASE_URL = 'https://privetschool-backend.ohbjmh.easypanel.host';
-
-// Create axios instance
+// Create axios instance with proper configuration
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true, // This is important for cookies
+  withCredentials: true,
 });
 
-// Request interceptor
+// FIXED Request interceptor - this is CRITICAL
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
-    // ✅ FIX: Check if token exists and isn't the test token
-    if (token && token !== '"test-token-direct"') {
+    console.log('🔐 Interceptor - Token from localStorage:', token);
+    
+    if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('✅ Authorization header set:', config.headers.Authorization);
+    } else {
+      console.log('❌ No token found in localStorage');
     }
+    
+    console.log('🚀 Making request to:', config.method?.toUpperCase(), config.url);
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
-// ------------------------ THUNKS ------------------------ //
-
-// Utility to sanitize token before saving
-const sanitizeToken = (token) => token?.replace(/^"|"$/g, '') || null;
-
-// Get user info
+// Use this axiosInstance for ALL your API calls
 export const getUserInfo = createAsyncThunk(
   'auth/getUserInfo',
   async (_, { rejectWithValue }) => {
@@ -37,158 +39,63 @@ export const getUserInfo = createAsyncThunk(
       const response = await axiosInstance.get('/user/infor');
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || { msg: 'Failed to get user info' });
+      console.log('❌ getUserInfo failed:', error.response?.data);
+      return rejectWithValue({ msg: error.response?.data?.msg || 'Failed to get user info' });
     }
   }
 );
 
-// Login user
-// Login user - SIMPLER VERSION
+// ✅ Connexion utilisateur
 export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async (userData, { rejectWithValue }) => {
     try {
-      console.log('🔄 Sending login request...', userData);
-      const response = await axiosInstance.post('/user/login', userData);
-      console.log('🔐 Login Response:', response.data);
-      
-      const token = response.data.token;
-      
-      if (!token) {
-        throw new Error('No token received from server');
+      const response = await axios.post('/user/login', userData);
+      const { access_token, user } = response.data;
+
+      if (access_token) {
+        localStorage.setItem('token', access_token);
+      } else if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
       }
-      
-      // ✅ FIX: Create user object safely
-      const user = response.data.user || {
-        _id: 'temp-id',
-        email: userData.email,
-        parentName: 'User',
-        isTemp: true
-      };
-      
-      localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('token', token);
-      localStorage.setItem('isLoggedIn', 'true');
-      
-      console.log('✅ Token stored:', token);
-      console.log('✅ User stored:', user);
-      
-      return { token, user };
-      
+
+      if (user) localStorage.setItem('user', JSON.stringify(user)); // save user
+
+      return { user, token: access_token || response.data.token };
     } catch (error) {
-      console.error('❌ Login Error:', error.response?.data || error.message);
-      return rejectWithValue({ 
-        msg: error.response?.data?.msg || 'Échec de la connexion' 
-      });
+      return rejectWithValue(error.response?.data || { msg: 'Login failed' });
     }
   }
 );
 
-// Register user
+
+// ✅ Inscription utilisateur
 export const registerUser = createAsyncThunk(
   'auth/registerUser',
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.post('/user/register', userData);
+      const response = await axios.post('/user/register', userData);
       const { token, user } = response.data;
 
-      const sanitizedToken = sanitizeToken(token);
+      if (token) localStorage.setItem('token', token);
 
-      if (sanitizedToken) localStorage.setItem('token', sanitizedToken);
       if (user) localStorage.setItem('user', JSON.stringify(user));
 
-      return { token: sanitizedToken, user };
+      return { user, token };
     } catch (error) {
-      return rejectWithValue({ msg: error.response?.data?.msg || "Échec de l'inscription" });
+      const message =
+        error.response?.data?.msg || error.response?.data?.message || "Échec de l'inscription";
+      return rejectWithValue({ msg: message });
     }
   }
 );
 
-// Logout
-// Logout - FIXED (using GET)
-export const logoutUser = createAsyncThunk(
-  'auth/logoutUser',
-  async (_, { rejectWithValue }) => {
-    try {
-      // ✅ FIX: Using GET to match your backend route
-      const response = await axiosInstance.get('/user/logout');
-      
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.setItem('isLoggedIn', 'false');
-      
-      return response.data;
-    } catch (error) {
-      console.error('❌ Logout Error:', error);
-      
-      // Even if server logout fails, clear local storage
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.setItem('isLoggedIn', 'false');
-      
-      return rejectWithValue({ 
-        msg: error.response?.data?.msg || 'Déconnexion locale effectuée' 
-      });
-    }
-  }
-);
-// Refresh token
-export const refreshToken = createAsyncThunk(
-  'auth/refreshToken',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await axiosInstance.get('/user/refresh_token');
-      const { token, user } = response.data;
-
-      const sanitizedToken = sanitizeToken(token);
-
-      if (sanitizedToken) localStorage.setItem('token', sanitizedToken);
-      if (user) localStorage.setItem('user', JSON.stringify(user));
-
-      return { token: sanitizedToken, user };
-    } catch (error) {
-      return rejectWithValue({ msg: 'Échec de la actualisation du token' });
-    }
-  }
-);
-
-// Update user info
-export const updateUserInfo = createAsyncThunk(
-  'auth/updateUserInfo',
-  async (userData, { rejectWithValue }) => {
-    try {
-      const response = await axiosInstance.patch('/user/update', userData);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue({ msg: 'Échec de la mise à jour du profil' });
-    }
-  }
-);
-
-// Update profile picture
-export const updateProfilePicture = createAsyncThunk(
-  'auth/updateProfilePicture',
-  async ({ formData, childId = null }, { rejectWithValue }) => {
-    try {
-      const url = childId
-        ? `/user/update-child-profile-picture/${childId}`
-        : '/user/update-profile-picture';
-      const response = await axiosInstance.patch(url, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      return { ...response.data, childId };
-    } catch (error) {
-      return rejectWithValue({ msg: 'Échec de la mise à jour de la photo de profil' });
-    }
-  }
-);
-
-// Get all users
+// ✅ Récupérer tous les utilisateurs (protégé)
 export const fetchAllUsers = createAsyncThunk(
   'auth/fetchAllUsers',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get('/user/all_users');
+      const response = await axios.get('/user/all_users');
       return response.data;
     } catch (error) {
       return rejectWithValue({ msg: 'Échec de la récupération des utilisateurs' });
@@ -196,12 +103,78 @@ export const fetchAllUsers = createAsyncThunk(
   }
 );
 
-// Get new users
+// ✅ Mettre à jour la photo de profil
+export const updateProfilePicture = createAsyncThunk(
+  'auth/updateProfilePicture',
+  async ({ formData, childId = null }, { rejectWithValue }) => {
+    try {
+      const url = childId
+        ? `/user/update-child-profile-picture/${childId}`
+        : '/user/update-profile-picture';
+
+      const response = await axios.patch(url, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      return { ...response.data, childId };
+    } catch (error) {
+      console.error('Erreur upload:', error.response?.data || error.message);
+      return rejectWithValue({ msg: 'Échec de la mise à jour de la photo de profil' });
+    }
+  }
+);
+
+// ✅ Actualiser le token
+export const refreshToken = createAsyncThunk(
+  'auth/refreshToken',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get('/user/refresh_token');
+      const { token, user } = response.data;
+
+      if (token) localStorage.setItem('token', token);
+      if (user) localStorage.setItem('user', JSON.stringify(user));
+
+      return { token, user };
+    } catch (error) {
+      return rejectWithValue({ msg: 'Échec de la actualisation du token' });
+    }
+  }
+);
+
+// ✅ Mettre à jour les informations utilisateur
+export const updateUserInfo = createAsyncThunk(
+  'auth/updateUserInfo',
+  async (userData, { rejectWithValue }) => {
+    try {
+      const response = await axios.patch('/user/update', userData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue({ msg: 'Échec de la mise à jour' });
+    }
+  }
+);
+
+// ✅ Actualiser les données utilisateur
+export const refreshUserData = createAsyncThunk(
+  'auth/refreshUserData',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get('/user/infor');
+      if (response.data) localStorage.setItem('user', JSON.stringify(response.data)); 
+      return response.data || null;
+    } catch (error) {
+      return rejectWithValue({ msg: 'Échec de la actualisation des données utilisateur' });
+    }
+  }
+);
+
+// ✅ Récupérer les nouveaux utilisateurs (pour admin)
 export const getNewUsers = createAsyncThunk(
   'auth/getNewUsers',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get('/user/new-inscriptions');
+      const response = await axios.get('/user/new-inscriptions');
       return response.data;
     } catch (error) {
       return rejectWithValue({ msg: 'Échec de la récupération des nouveaux utilisateurs' });
@@ -209,12 +182,12 @@ export const getNewUsers = createAsyncThunk(
   }
 );
 
-// Mark user as seen
+// ✅ Marquer l'utilisateur comme vu
 export const markUserAsSeen = createAsyncThunk(
   'auth/markUserAsSeen',
   async (userId, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.patch(`/user/mark-user-reviewed/${userId}`);
+      const response = await axios.patch(`/user/mark-user-reviewed/${userId}`);
       return response.data;
     } catch (error) {
       return rejectWithValue({ msg: 'Échec du marquage de l\'utilisateur' });
@@ -222,12 +195,12 @@ export const markUserAsSeen = createAsyncThunk(
   }
 );
 
-// Update quiz score
+// ✅ Mettre à jour le score du quiz
 export const updateQuizScore = createAsyncThunk(
   'auth/updateQuizScore',
   async (quizData, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.post('/user/update_quiz_score', quizData);
+      const response = await axios.post('/user/update_quiz_score', quizData);
       return response.data;
     } catch (error) {
       return rejectWithValue({ msg: 'Échec de la mise à jour du score' });
@@ -235,27 +208,25 @@ export const updateQuizScore = createAsyncThunk(
   }
 );
 
-// Refresh user data
-export const refreshUserData = createAsyncThunk(
-  'auth/refreshUserData',
+// ✅ Déconnexion utilisateur
+export const logoutUser = createAsyncThunk(
+  'auth/logoutUser',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get('/user/infor');
-      if (response.data) localStorage.setItem('user', JSON.stringify(response.data));
+      const response = await axios.get('/user/logout');
       return response.data;
     } catch (error) {
-      return rejectWithValue({ msg: 'Échec de la actualisation des données utilisateur' });
+      return rejectWithValue({ msg: 'Échec de la déconnexion' });
     }
   }
 );
 
-// ------------------------ SLICE ------------------------ //
-
+// ✅ Slice
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
     user: JSON.parse(localStorage.getItem('user')) || null,
-    token: sanitizeToken(localStorage.getItem('token')),
+    token: localStorage.getItem('token') || null,
     loading: false,
     error: null,
     isLoggedIn: !!localStorage.getItem('token'),
@@ -264,6 +235,14 @@ const authSlice = createSlice({
     profilePictureLoading: false,
   },
   reducers: {
+    logoutUser: (state) => {
+      state.user = null;
+      state.token = null;
+      state.isLoggedIn = false;
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      toast.info('Déconnexion réussie');
+    },
     clearError: (state) => {
       state.error = null;
     },
@@ -278,7 +257,10 @@ const authSlice = createSlice({
       if (state.user?.children) {
         const childIndex = state.user.children.findIndex((child) => child._id === childId);
         if (childIndex !== -1) {
-          state.user.children[childIndex] = { ...state.user.children[childIndex], ...updates };
+          state.user.children[childIndex] = {
+            ...state.user.children[childIndex],
+            ...updates,
+          };
           localStorage.setItem('user', JSON.stringify(state.user));
         }
       }
@@ -286,81 +268,154 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Login
-      .addCase(loginUser.pending, (state) => { state.loading = true; state.error = null; })
+      // Connexion
+      .addCase(loginUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.user;
         state.token = action.payload.token;
         state.isLoggedIn = true;
+        if (state.user) localStorage.setItem('user', JSON.stringify(state.user));
         toast.success('Connexion réussie');
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.msg;
+        state.error = action.payload?.msg || 'Échec de la connexion';
         toast.error(state.error);
       })
-      // Register
-      .addCase(registerUser.pending, (state) => { state.loading = true; state.error = null; })
+
+      // Inscription
+      .addCase(registerUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.user;
         state.token = action.payload.token;
         state.isLoggedIn = true;
+        if (state.user) localStorage.setItem('user', JSON.stringify(state.user));
         toast.success('Inscription réussie !');
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.msg;
+        state.error = action.payload?.msg || "Échec de l'inscription";
         toast.error(state.error);
       })
-      // Logout
-      .addCase(logoutUser.fulfilled, (state) => {
-        state.user = null;
-        state.token = null;
-        state.isLoggedIn = false;
-        toast.info('Déconnexion réussie');
+
+      // Récupérer tous les utilisateurs
+      .addCase(fetchAllUsers.fulfilled, (state, action) => {
+        state.loading = false;
+        state.allUsers = action.payload;
       })
-      .addCase(logoutUser.rejected, (state, action) => {
-        state.error = action.payload?.msg;
-        toast.error(state.error);
+      .addCase(fetchAllUsers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.msg || 'Échec de la récupération des utilisateurs';
       })
-      // Update profile picture
-      .addCase(updateProfilePicture.pending, (state) => { state.profilePictureLoading = true; })
+
+      // Mettre à jour la photo de profil
+      .addCase(updateProfilePicture.pending, (state) => {
+        state.profilePictureLoading = true;
+      })
       .addCase(updateProfilePicture.fulfilled, (state, action) => {
         state.profilePictureLoading = false;
         const { profilePicture, childId } = action.payload;
         if (state.user) {
           if (childId && state.user.children) {
             const childIndex = state.user.children.findIndex((child) => child._id === childId);
-            if (childIndex !== -1) state.user.children[childIndex].profilePicture = profilePicture;
-          } else state.user.profilePicture = profilePicture;
+            if (childIndex !== -1) {
+              state.user.children[childIndex].profilePicture = profilePicture;
+            }
+          } else {
+            state.user.profilePicture = profilePicture;
+          }
           localStorage.setItem('user', JSON.stringify(state.user));
         }
         toast.success('Photo de profil mise à jour avec succès');
       })
       .addCase(updateProfilePicture.rejected, (state, action) => {
         state.profilePictureLoading = false;
-        state.error = action.payload?.msg;
+        state.error = action.payload?.msg || 'Échec de la mise à jour de la photo de profil';
         toast.error(state.error);
       })
-      // Other cases
-      .addCase(fetchAllUsers.fulfilled, (state, action) => { state.allUsers = action.payload; })
-      .addCase(getNewUsers.fulfilled, (state, action) => { state.newUsers = action.payload; })
-      .addCase(markUserAsSeen.fulfilled, (state, action) => {
-        const updatedUser = action.payload.user;
-        state.newUsers = state.newUsers.filter(u => u._id !== updatedUser._id);
-        toast.success('Utilisateur marqué comme vu');
+
+      // Mettre à jour les informations utilisateur
+      .addCase(updateUserInfo.fulfilled, (state, action) => {
+        if (state.user) {
+          state.user = { ...state.user, ...action.payload.user };
+          localStorage.setItem('user', JSON.stringify(state.user));
+        }
+        toast.success('Profil mis à jour avec succès');
       })
-      .addCase(updateQuizScore.fulfilled, (state, action) => {
-        if (state.user) { state.user.quizScores = action.payload.quizScores; }
+      .addCase(updateUserInfo.rejected, (state, action) => {
+        state.error = action.payload?.msg || 'Échec de la mise à jour du profil';
+        toast.error(state.error);
       })
+
+      // Actualiser les données utilisateur
       .addCase(refreshUserData.fulfilled, (state, action) => {
         state.user = action.payload;
         if (state.user) localStorage.setItem('user', JSON.stringify(state.user));
+      })
+      .addCase(refreshUserData.rejected, (state, action) => {
+        state.error = action.payload?.msg || 'Échec de la actualisation des données';
+      })
+
+      // Récupérer les nouveaux utilisateurs
+      .addCase(getNewUsers.fulfilled, (state, action) => {
+        state.newUsers = action.payload;
+      })
+      .addCase(getNewUsers.rejected, (state, action) => {
+        state.error = action.payload?.msg || 'Échec de la récupération des nouveaux utilisateurs';
+      })
+
+      // Marquer l'utilisateur comme vu
+      .addCase(markUserAsSeen.fulfilled, (state, action) => {
+        const updatedUser = action.payload.user;
+        state.newUsers = state.newUsers.filter(user => user._id !== updatedUser._id);
+        toast.success('Utilisateur marqué comme vu');
+      })
+      .addCase(markUserAsSeen.rejected, (state, action) => {
+        state.error = action.payload?.msg || 'Échec du marquage de l\'utilisateur';
+        toast.error(state.error);
+      })
+
+      // Mettre à jour le score du quiz
+      .addCase(updateQuizScore.fulfilled, (state, action) => {
+        if (state.user) {
+          state.user.quizScores = action.payload.quizScores;
+          localStorage.setItem('user', JSON.stringify(state.user));
+        }
+        toast.success('Score mis à jour avec succès');
+      })
+      .addCase(updateQuizScore.rejected, (state, action) => {
+        state.error = action.payload?.msg || 'Échec de la mise à jour du score';
+        toast.error(state.error);
+      })
+
+      // Déconnexion
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.user = null;
+        state.token = null;
+        state.isLoggedIn = false;
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        toast.info('Déconnexion réussie');
+      })
+      .addCase(logoutUser.rejected, (state, action) => {
+        state.error = action.payload?.msg || 'Échec de la déconnexion';
+        toast.error(state.error);
       });
   },
 });
 
-export const { clearError, updateUserProfile, updateChildProfile } = authSlice.actions;
+export const {
+  clearError,
+  updateUserProfile,
+  updateChildProfile,
+} = authSlice.actions;
+
 export default authSlice.reducer;
