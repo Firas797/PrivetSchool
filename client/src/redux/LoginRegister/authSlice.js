@@ -123,22 +123,6 @@ export const updateProfilePicture = createAsyncThunk(
 );
 
 // ✅ Actualiser le token
-// export const refreshToken = createAsyncThunk(
-//   'auth/refreshToken',
-//   async (_, { rejectWithValue }) => {
-//     try {
-//       const response = await axios.get('/user/refresh_token');
-//       const { token, user } = response.data;
-
-//       if (token) localStorage.setItem('token', token);
-//       if (user) localStorage.setItem('user', JSON.stringify(user));
-
-//       return { token, user };
-//     } catch (error) {
-//       return rejectWithValue({ msg: 'Échec de la actualisation du token' });
-//     }
-//   }
-// );
 export const refreshToken = createAsyncThunk(
   'auth/refreshToken',
   async (_, { rejectWithValue }) => {
