@@ -48,19 +48,34 @@ export const loginUser = createAsyncThunk(
   async (userData, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.post('/user/login', userData);
-      const { token, user } = response.data;
-
-      const sanitizedToken = sanitizeToken(token);
-
-      if (sanitizedToken) localStorage.setItem('token', sanitizedToken);
-      if (user) localStorage.setItem('user', JSON.stringify(user));
-
-      return { token: sanitizedToken, user };
+      console.log('🔐 Login Response:', response.data); // Debug
+      
+      // ✅ FIX: Handle the actual backend response structure
+      const token = response.data.token;
+      const user = response.data.user;
+      
+      if (!token) {
+        throw new Error('No token received from server');
+      }
+      
+      // ✅ FIX: Store token properly without quotes
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('isLoggedIn', 'true');
+      
+      console.log('✅ Token stored:', token); // Debug
+      console.log('✅ User stored:', user); // Debug
+      
+      return { token, user };
     } catch (error) {
-      return rejectWithValue({ msg: error.response?.data?.msg || 'Échec de la connexion' });
+      console.error('❌ Login Error:', error.response?.data || error.message);
+      return rejectWithValue({ 
+        msg: error.response?.data?.msg || 'Échec de la connexion' 
+      });
     }
   }
 );
+
 
 // Register user
 export const registerUser = createAsyncThunk(
@@ -87,12 +102,26 @@ export const logoutUser = createAsyncThunk(
   'auth/logoutUser',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get('/user/logout');
+      // ✅ FIX: Make sure we're using POST for logout
+      const response = await axiosInstance.post('/user/logout');
+      
+      // Clear local storage
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.setItem('isLoggedIn', 'false');
+      
       return response.data;
     } catch (error) {
-      return rejectWithValue({ msg: error.response?.data?.msg || 'Échec de la déconnexion' });
+      console.error('❌ Logout Error:', error);
+      
+      // Even if server logout fails, clear local storage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.setItem('isLoggedIn', 'false');
+      
+      return rejectWithValue({ 
+        msg: error.response?.data?.msg || 'Déconnexion locale effectuée' 
+      });
     }
   }
 );
