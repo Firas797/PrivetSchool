@@ -43,66 +43,36 @@ app.use('/uploads', express.static('uploads'));
 // Security middleware
 app.use(helmet());
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  console.log('✅ Health check called');
-  res.status(200).json({ 
-    status: 'OK', 
-    message: 'Server with CORS DEBUG is running',
-    timestamp: new Date().toISOString(),
-    cors: 'enabled'
-  });
-});
 
-// Test login endpoint directly in server.js
-app.options('/user/login', (req, res) => {
-  console.log('✅✅✅ OPTIONS preflight for /user/login');
-  res.header('Access-Control-Allow-Origin', 'https://privetschool-front.ohbjmh.easypanel.host');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Cookie');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.status(200).end();
-});
 
-app.post('/user/login', (req, res) => {
-  console.log('✅✅✅ LOGIN endpoint called directly');
-  res.json({ 
-    message: 'Login successful - DIRECT ROUTE',
-    token: 'test-token-direct'
-  });
-});
-
-// Now load your regular routes
-console.log('📁 Loading routes...');
-try {
-  app.use('/user', require('./routes/userRoutes'));
-  console.log('✅ userRoutes loaded');
-} catch (error) {
-  console.log('❌ Error loading userRoutes:', error.message);
+// ✅ Handle preflight requests
+app.options('*', cors());
+const fs = require('fs');
+const uploadDir = 'uploads/profile-pictures';
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
 }
+// Routes
+app.get('/', (req, res) => {
+    res.json({ msg: 'Welcome Firas' });
+});
+app.use('/user', require('./routes/userRoutes'));
+app.use('/api/courses', require('./routes/coursesRouter'));
+app.use('/api/conclusions', require('./routes/concluRoutes')); // ✅ Changed prefix
+app.use('/api/events', require('./routes/eventRoutes'));
 
-try {
-  app.use('/api/courses', require('./routes/coursesRouter'));
-  console.log('✅ coursesRouter loaded');
-} catch (error) {
-  console.log('❌ Error loading coursesRouter:', error.message);
-}
+app.use('/api/homeworks', require('./routes/HomeWorkRoutes'));
+app.use('/teachers', require('./routes/teacherRoutes'));
 
-// Add other routes with error handling...
-try {
-  app.use('/api/conclusions', require('./routes/concluRoutes'));
-  app.use('/api/events', require('./routes/eventRoutes'));
-  app.use('/api/homeworks', require('./routes/HomeWorkRoutes'));
-  app.use('/teachers', require('./routes/teacherRoutes'));
-  app.use('/api/quizzes', require('./routes/quizRoutes'));
-  app.use('/api/culture', require('./routes/cultureRoutes'));
-  app.use('/api/emplois', require('./routes/emploiRoutes'));
-  app.use('/api/notifications', require('./routes/notificationRoutes'));
-  app.use('/api/exams', require('./routes/examRoutes'));
-  console.log('✅ All routes loaded successfully');
-} catch (error) {
-  console.log('❌ Error loading some routes:', error.message);
-}
+// ✅ Add Quiz Routes
+app.use('/api/quizzes', require('./routes/quizRoutes'));
+app.use('/api/culture', require('./routes/cultureRoutes'));
+
+app.use('/api/emplois', require('./routes/emploiRoutes')); // <-- Added this line
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+
+app.use('/api/exams', require('./routes/examRoutes'));
+
 
 // Root route
 app.get('/', (req, res) => {
