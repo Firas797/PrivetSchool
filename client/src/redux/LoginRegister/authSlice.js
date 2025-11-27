@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 
 // ✅ CORRIGÉ: Utiliser l'URL de votre backend
-const API_BASE_URL = 'https://57.131.24.227';
+const API_BASE_URL = 'https://privetschool-backend.ohbjmh.easypanel.host';
 axios.defaults.withCredentials = true; // if your backend uses cookies
 
 // ✅ Configuration de base - CORRIGÉ
@@ -22,7 +22,7 @@ export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await axios.post('https://57.131.24.227/user/login', userData);
+      const response = await axios.post('user/login', userData);
       const { token, user } = response.data;
 
       if (token) {
