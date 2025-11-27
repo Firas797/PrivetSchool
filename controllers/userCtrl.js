@@ -184,28 +184,46 @@ register: async (req, res) => {
   }
 },
 
+// In your userCtrl.js login function - ADD THESE CONSOLE LOGS:
 login: async (req, res) => {
   try {
+    console.log('🎯 LOGIN ENDPOINT HIT - REAL BACKEND');
+    console.log('📧 Request body:', req.body);
+    console.log('🌐 Headers:', req.headers);
+    
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ msg: "Email et mot de passe requis" });
+    if (!email || !password) {
+      console.log('❌ Missing email or password');
+      return res.status(400).json({ msg: "Email et mot de passe requis" });
+    }
 
     const user = await Users.findOne({ email });
-    if (!user) return res.status(400).json({ msg: "Utilisateur non trouvé." });
+    if (!user) {
+      console.log('❌ User not found in database:', email);
+      return res.status(400).json({ msg: "Utilisateur non trouvé." });
+    }
 
+    console.log('✅ User found:', user.email);
+    
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ msg: "Mot de passe incorrect." });
+    if (!isMatch) {
+      console.log('❌ Password does not match');
+      return res.status(400).json({ msg: "Mot de passe incorrect." });
+    }
 
+    console.log('✅ Password matched, generating tokens...');
+    
     const accessToken = createAccessToken({ id: user._id, role: user.role });
     const refreshToken = createRefreshToken({ id: user._id, role: user.role });
     await Users.findByIdAndUpdate(user._id, { refreshToken });
 
-    // ✅ FIX: Simplified cookie configuration
+    console.log('✅ Tokens generated, setting cookie...');
+    
     res.cookie('refreshtoken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // Dynamic based on environment
-      sameSite: 'lax', // Better for cross-origin requests
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      // Remove domain if you're having cross-domain issues
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     const userResponse = {
@@ -219,7 +237,8 @@ login: async (req, res) => {
       role: user.role
     };
 
-    // ✅ FIX: Make sure response structure matches frontend expectation
+    console.log('✅ Login successful, sending response for user:', user.email);
+    
     res.json({ 
       msg: "Connexion réussie", 
       token: accessToken, 
@@ -227,7 +246,7 @@ login: async (req, res) => {
     });
     
   } catch (err) {
-    console.error('Erreur login:', err);
+    console.error('❌ Login error:', err);
     return res.status(500).json({ msg: "Erreur serveur" });
   }
 },

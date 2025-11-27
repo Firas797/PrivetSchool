@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-const API_URL = 'https://57.131.24.227/api/culture';
+const API_URL = 'https://privetschool-backend.ohbjmh.easypanel.host/api/culture';
 
 // 🔹 Get all culture items
 export const fetchCultures = createAsyncThunk('culture/fetchAll', async (_, { rejectWithValue }) => {

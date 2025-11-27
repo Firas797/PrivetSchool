@@ -4,7 +4,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 
 // ✅ CORRIGÉ: Utiliser l'URL de votre backend
-const API_BASE_URL = 'https://57.131.24.227';
+const API_BASE_URL = 'https://privetschool-backend.ohbjmh.easypanel.host';
 
 // 📥 Récupérer toutes les conclusions
 export const fetchConclusions = createAsyncThunk(
