@@ -1,16 +1,22 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
+// ----------------------------
+// Shared Axios instance (no auth)
+// ----------------------------
 const API_URL = 'https://privetschool-backend.ohbjmh.easypanel.host';
+const axiosInstance = axios.create({
+  baseURL: API_URL,
+  withCredentials: true, // keep cookies if needed
+});
 
 // ----------------------------
-// Fetch notifications for a specific user (including forall)
+// Fetch notifications for a specific user (or all if Admin)
 // ----------------------------
 export const fetchUserNotifications = createAsyncThunk(
   "notifications/fetchUserNotifications",
   async (userId) => {
-    const res = await axios.get(`${API_URL}/user/${userId}`);
-    // Map read status for this user
+    const res = await axiosInstance.get(`/user/${userId}`);
     const data = res.data.map((notif) => ({
       ...notif,
       read: notif.readBy?.includes(userId) || false,
@@ -25,7 +31,7 @@ export const fetchUserNotifications = createAsyncThunk(
 export const createNotification = createAsyncThunk(
   "notifications/createNotification",
   async (data) => {
-    const res = await axios.post(API_URL, data);
+    const res = await axiosInstance.post("/notifications", data);
     return res.data;
   }
 );
@@ -36,8 +42,7 @@ export const createNotification = createAsyncThunk(
 export const markNotificationAsRead = createAsyncThunk(
   "notifications/markNotificationAsRead",
   async ({ notificationId, userId }) => {
-    const res = await axios.put(`${API_URL}/${notificationId}/read/${userId}`);
-    // Map read status for this user
+    const res = await axiosInstance.put(`/notifications/${notificationId}/read/${userId}`);
     const updated = { ...res.data, read: res.data.readBy?.includes(userId) || false };
     return { updated, userId };
   }
@@ -49,8 +54,7 @@ export const markNotificationAsRead = createAsyncThunk(
 export const markAllAsRead = createAsyncThunk(
   "notifications/markAllAsRead",
   async (userId) => {
-    const res = await axios.put(`${API_URL}/user/${userId}/read-all`);
-    // Map read status for this user
+    const res = await axiosInstance.put(`/user/${userId}/read-all`);
     const data = res.data.map((notif) => ({
       ...notif,
       read: true,
@@ -69,7 +73,7 @@ const notificationSlice = createSlice({
     unreadCount: 0,
     loading: false,
     error: null,
-    currentUserId: null, // store current user id
+    currentUserId: null,
   },
   reducers: {
     clearUnreadCount(state) {
@@ -81,7 +85,6 @@ const notificationSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch user notifications
       .addCase(fetchUserNotifications.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -96,8 +99,6 @@ const notificationSlice = createSlice({
         state.loading = false;
         state.error = action.error.message;
       })
-
-      // Create notification
       .addCase(createNotification.fulfilled, (state, action) => {
         state.userNotifications.unshift({
           ...action.payload,
@@ -107,16 +108,12 @@ const notificationSlice = createSlice({
           state.unreadCount += 1;
         }
       })
-
-      // Mark one notification as read
       .addCase(markNotificationAsRead.fulfilled, (state, action) => {
         const { updated } = action.payload;
         const index = state.userNotifications.findIndex((n) => n._id === updated._id);
         if (index !== -1) state.userNotifications[index] = updated;
         state.unreadCount = state.userNotifications.filter((n) => !n.read).length;
       })
-
-      // Mark all as read
       .addCase(markAllAsRead.fulfilled, (state, action) => {
         state.userNotifications = action.payload.notifications;
         state.unreadCount = 0;
