@@ -1,22 +1,18 @@
-// routes/concluRoutes.js
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
 const concluCtrl = require('../controllers/concluCtrl');
+const multer = require('multer');
 
-// Configure multer for memory storage (storing file in buffer)
+// Configure multer
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// Routes
-router.post('/', upload.single('pdfFile'), concluCtrl.createConclusion); 
-router.get('/', concluCtrl.getAllConclusions);
+// ✅ Routes
+router.post('/', upload.single('pdfFile'), concluCtrl.createConclusion); // Create
+router.get('/', concluCtrl.getAllConclusions); // Get all
 
-// FIXED ✔
-router.get('/details/:id', concluCtrl.getConclusionById); 
+router.get('/class/:classe', concluCtrl.getConclusionsByClass); // Get by class
+router.get('/details/:id', concluCtrl.getConclusionById); // Get single
+router.delete('/:id', concluCtrl.deleteConclusion); // Delete
 
-// Put this LAST ❗
-router.get('/:classe', concluCtrl.getConclusionsByClass);
-
-router.delete('/:id', concluCtrl.deleteConclusion);
 module.exports = router;
