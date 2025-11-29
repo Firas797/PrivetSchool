@@ -2,111 +2,117 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
+const API_BASE_URL = "https://privetschool-backend.ohbjmh.easypanel.host";
 
-// ✅ CORRIGÉ: Utiliser l'URL de votre backend
-const API_BASE_URL = 'https://privetschool-backend.ohbjmh.easypanel.host';
+// 🔥 Use same axios instance as auth
+const axiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+});
 
-// 📥 Récupérer toutes les conclusions
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// ========================== THUNKS ==============================
+
+// GET all conclusions
 export const fetchConclusions = createAsyncThunk(
   "conclusion/fetchConclusions",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/conclusions`);
+      const response = await axiosInstance.get("/api/conclusions");
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Erreur lors du chargement des conclusions.");
+      return rejectWithValue(error.response?.data || "Erreur lors du chargement des conclusions.");
     }
   }
 );
 
-// ➕ Créer une nouvelle conclusion
+// Create new conclusion
 export const createConclusion = createAsyncThunk(
   "conclusion/createConclusion",
   async (formData, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/conclusions`, formData, {
+      const response = await axiosInstance.post("/api/conclusions", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      toast.success("✅ Conclusion ajoutée avec succès !");
+      toast.success("Conclusion ajoutée !");
       return response.data.data;
     } catch (error) {
-      toast.error("❌ Erreur lors de l'ajout de la conclusion !");
-      return rejectWithValue(
-        error.response?.data?.message || "Erreur lors de la création de la conclusion."
-      );
+      toast.error("Erreur lors de l'ajout !");
+      return rejectWithValue(error.response?.data || "Erreur lors de la création.");
     }
   }
 );
 
-// 🗑️ Supprimer une conclusion
+// Delete conclusion
 export const deleteConclusion = createAsyncThunk(
   "conclusion/deleteConclusion",
   async (id, { rejectWithValue }) => {
     try {
-      await axios.delete(`${API_BASE_URL}/api/conclusions/${id}`);
-      toast.info("🗑️ Conclusion supprimée !");
+      await axiosInstance.delete(`/api/conclusions/${id}`);
+      toast.info("Conclusion supprimée");
       return id;
     } catch (error) {
-      toast.error("❌ Erreur lors de la suppression de la conclusion");
-      return rejectWithValue(error.response?.data?.message || "Erreur lors de la suppression.");
+      return rejectWithValue(error.response?.data || "Erreur lors de la suppression.");
     }
   }
 );
 
-// 📚 Récupérer les conclusions par classe
+// Get by class
 export const fetchConclusionsByClass = createAsyncThunk(
   "conclusion/fetchConclusionsByClass",
   async (classNumber, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/conclusions/class/${classNumber}`);
+      const res = await axiosInstance.get(`/api/conclusions/class/${classNumber}`);
       return res.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Erreur lors du chargement des conclusions par classe.");
+      return rejectWithValue(err.response?.data || "Erreur chargement conclusion.");
     }
   }
 );
 
-// 🔄 Mettre à jour une conclusion
+// Update
 export const updateConclusion = createAsyncThunk(
   "conclusion/updateConclusion",
   async ({ id, formData }, { rejectWithValue }) => {
     try {
-      const response = await axios.put(`${API_BASE_URL}/api/conclusions/${id}`, formData, {
+      const response = await axiosInstance.put(`/api/conclusions/${id}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      toast.success("✅ Conclusion mise à jour avec succès !");
+      toast.success("Conclusion mise à jour !");
       return response.data.data;
     } catch (error) {
-      toast.error("❌ Erreur lors de la mise à jour de la conclusion !");
-      return rejectWithValue(
-        error.response?.data?.message || "Erreur lors de la mise à jour de la conclusion."
-      );
+      return rejectWithValue(error.response?.data || "Erreur lors de la mise à jour.");
     }
   }
 );
 
-// 📄 Récupérer une conclusion par ID
+// Get by ID
 export const fetchConclusionById = createAsyncThunk(
   "conclusion/fetchConclusionById",
   async (id, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/conclusions/${id}`);
+      const response = await axiosInstance.get(`/api/conclusions/${id}`);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Erreur lors du chargement de la conclusion.");
+      return rejectWithValue(error.response?.data || "Erreur chargement conclusion.");
     }
   }
 );
 
-// 🏷️ Récupérer les conclusions par catégorie
+// Get by category
 export const fetchConclusionsByCategory = createAsyncThunk(
   "conclusion/fetchConclusionsByCategory",
   async (category, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/conclusions/category/${category}`);
+      const response = await axiosInstance.get(`/api/conclusions/category/${category}`);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Erreur lors du chargement des conclusions par catégorie.");
+      return rejectWithValue(error.response?.data || "Erreur chargement par catégorie.");
     }
   }
 );
