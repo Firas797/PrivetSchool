@@ -16,7 +16,7 @@ const axiosInstance = axios.create({
 export const fetchUserNotifications = createAsyncThunk(
   "notifications/fetchUserNotifications",
   async (userId) => {
-    const res = await axiosInstance.get(`/user/${userId}`);
+    const res = await axiosInstance.get(`/api/notifications/user/${userId}`);
     const data = res.data.map((notif) => ({
       ...notif,
       read: notif.readBy?.includes(userId) || false,
@@ -31,7 +31,7 @@ export const fetchUserNotifications = createAsyncThunk(
 export const createNotification = createAsyncThunk(
   "notifications/createNotification",
   async (data) => {
-    const res = await axiosInstance.post("/notifications", data);
+    const res = await axiosInstance.post("/api/notifications", data);
     return res.data;
   }
 );
@@ -42,7 +42,7 @@ export const createNotification = createAsyncThunk(
 export const markNotificationAsRead = createAsyncThunk(
   "notifications/markNotificationAsRead",
   async ({ notificationId, userId }) => {
-    const res = await axiosInstance.put(`/notifications/${notificationId}/read/${userId}`);
+    const res = await axiosInstance.put(`/api/notifications/${notificationId}/read/${userId}`);
     const updated = { ...res.data, read: res.data.readBy?.includes(userId) || false };
     return { updated, userId };
   }
@@ -54,7 +54,7 @@ export const markNotificationAsRead = createAsyncThunk(
 export const markAllAsRead = createAsyncThunk(
   "notifications/markAllAsRead",
   async (userId) => {
-    const res = await axiosInstance.put(`/user/${userId}/read-all`);
+    const res = await axiosInstance.put(`/api/notifications/user/${userId}/read-all`);
     const data = res.data.map((notif) => ({
       ...notif,
       read: true,
