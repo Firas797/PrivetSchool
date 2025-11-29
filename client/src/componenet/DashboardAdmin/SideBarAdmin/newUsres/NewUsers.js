@@ -6,7 +6,6 @@ const NewUsers = () => {
   const [newUsers, setNewUsers] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch new users from backend
   const fetchNewUsers = async () => {
     try {
       setLoading(true);
@@ -16,18 +15,20 @@ const NewUsers = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-      setNewUsers(response.data);
+
+      // ✅ Ensure response.data is always an array
+      setNewUsers(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       toast.error(
         err.response?.data?.msg ||
           "Erreur lors de la récupération des nouveaux utilisateurs."
       );
+      setNewUsers([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Function to mark a user as seen
   const markAsSeen = async (userId) => {
     try {
       const token = localStorage.getItem("token");
@@ -35,14 +36,10 @@ const NewUsers = () => {
         `/user/mark-user-reviewed/${userId}`,
         {},
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
-
       toast.success("Utilisateur marqué comme vu !");
-      // Remove user from list instantly (without refetch)
       setNewUsers((prev) => prev.filter((user) => user._id !== userId));
     } catch (err) {
       toast.error(
@@ -57,7 +54,7 @@ const NewUsers = () => {
   }, []);
 
   if (loading) return <p>Chargement des nouveaux utilisateurs...</p>;
-  if (newUsers.length === 0)
+  if (!Array.isArray(newUsers) || newUsers.length === 0)
     return <p>Pas de nouveaux utilisateurs pour le moment.</p>;
 
   return (
@@ -72,24 +69,31 @@ const NewUsers = () => {
             <th>Adresse</th>
             <th>Enfants</th>
             <th>Date d'inscription</th>
-            <th>Action</th> {/* ✅ new column */}
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
           {newUsers.map((user) => (
-            <tr key={user._id}>
-              <td>{user.parentName}</td>
-              <td>{user.email}</td>
-              <td>{user.phoneNumber}</td>
-              <td>{user.address}</td>
+            <tr key={user._id || Math.random()}>
+              <td>{user.parentName || "---"}</td>
+              <td>{user.email || "---"}</td>
+              <td>{user.phoneNumber || "---"}</td>
+              <td>{user.address || "---"}</td>
               <td>
-                {user.children.map((child, index) => (
-                  <div key={index}>
-                    {child.name} - {child.age} ans - Classe {child.class}ème
-                  </div>
-                ))}
+                {(Array.isArray(user.children) ? user.children : []).map(
+                  (child, index) => (
+                    <div key={index}>
+                      {child.name || "---"} - {child.age || "---"} ans - Classe{" "}
+                      {child.class || "---"}ème
+                    </div>
+                  )
+                )}
               </td>
-              <td>{new Date(user.createdAt).toLocaleString()}</td>
+              <td>
+                {user.createdAt
+                  ? new Date(user.createdAt).toLocaleString()
+                  : "---"}
+              </td>
               <td>
                 <button
                   className="btn btn-success btn-sm"
