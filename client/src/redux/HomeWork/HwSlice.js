@@ -2,39 +2,64 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
-// ✅ CORRIGÉ: Utiliser l'URL de votre backend
+// If you can't import directly, recreate the axiosInstance here:
 const API_BASE_URL = 'https://privetschool-backend.ohbjmh.easypanel.host';
 
-// Thunk for fetching homework
-export const fetchHomeWorks = createAsyncThunk('homeWorks/fetchHomeWorks', async (_, { rejectWithValue }) => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/api/homeworks/getAllHw`);
-    return response.data;
-  } catch (error) {
-    return rejectWithValue(error.response?.data || { msg: 'Échec de la récupération des devoirs' });
-  }
+const axiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
+
+// Attach token to every request
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// Thunk for fetching homework
+export const fetchHomeWorks = createAsyncThunk(
+  'homeWorks/fetchHomeWorks', 
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get('/api/homeworks/getAllHw');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { msg: 'Échec de la récupération des devoirs' });
+    }
+  }
+);
 
 // Thunk for adding homework
-export const addHomeWorkAsync = createAsyncThunk('homeWorks/addHomeWork', async (homeWorkData, { rejectWithValue }) => {
-  try {
-    // Ensure homeWorkData is correctly formatted
-    const { title, classe, description, category } = homeWorkData;
-    const response = await axios.post(`${API_BASE_URL}/api/homeworks/createHw`, { title, classe, description, category });
-    toast.success('Devoir ajouté avec succès');
-    return response.data.homeWork;
-  } catch (error) {
-    toast.error('Échec de l\'ajout du devoir');
-    return rejectWithValue(error.response?.data || { msg: 'Échec de l\'ajout du devoir' });
+export const addHomeWorkAsync = createAsyncThunk(
+  'homeWorks/addHomeWork', 
+  async (homeWorkData, { rejectWithValue }) => {
+    try {
+      const { title, classe, description, category } = homeWorkData;
+      const response = await axiosInstance.post('/api/homeworks/createHw', { 
+        title, 
+        classe, 
+        description, 
+        category 
+      });
+      toast.success('Devoir ajouté avec succès');
+      return response.data.homeWork;
+    } catch (error) {
+      toast.error('Échec de l\'ajout du devoir');
+      return rejectWithValue(error.response?.data || { msg: 'Échec de l\'ajout du devoir' });
+    }
   }
-});
+);
 
-// 🔹 Add this new thunk in your slice file
+// Thunk for fetching homework by class
 export const fetchHomeWorksByClass = createAsyncThunk(
   'homeWorks/fetchHomeWorksByClass',
   async (classNumber, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/homeworks/by-class/${classNumber}`);
+      const response = await axiosInstance.get(`/api/homeworks/by-class/${classNumber}`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || { msg: 'Erreur lors de la récupération des devoirs' });
@@ -42,12 +67,12 @@ export const fetchHomeWorksByClass = createAsyncThunk(
   }
 );
 
-// 🔹 Thunk for updating homework
+// Thunk for updating homework
 export const updateHomeWorkAsync = createAsyncThunk(
   'homeWorks/updateHomeWork',
   async ({ id, homeWorkData }, { rejectWithValue }) => {
     try {
-      const response = await axios.put(`${API_BASE_URL}/api/homeworks/updateHw/${id}`, homeWorkData);
+      const response = await axiosInstance.put(`/api/homeworks/updateHw/${id}`, homeWorkData);
       toast.success('Devoir mis à jour avec succès');
       return response.data.homeWork;
     } catch (error) {
@@ -57,12 +82,12 @@ export const updateHomeWorkAsync = createAsyncThunk(
   }
 );
 
-// 🔹 Thunk for deleting homework
+// Thunk for deleting homework
 export const deleteHomeWorkAsync = createAsyncThunk(
   'homeWorks/deleteHomeWork',
   async (id, { rejectWithValue }) => {
     try {
-      await axios.delete(`${API_BASE_URL}/api/homeworks/deleteHw/${id}`);
+      await axiosInstance.delete(`/api/homeworks/deleteHw/${id}`);
       toast.success('Devoir supprimé avec succès');
       return id;
     } catch (error) {

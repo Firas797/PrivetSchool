@@ -2,15 +2,30 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
-// ✅ CORRIGÉ: Utiliser l'URL de votre backend
+// Backend URL
 const API_BASE_URL = 'https://privetschool-backend.ohbjmh.easypanel.host';
+
+// 🔥 SHARED AXIOS INSTANCE
+const axiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+});
+
+// 🔥 Automatically attach token to every request
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// ======================== THUNKS ========================
 
 // Fetch all courses
 export const fetchCourses = createAsyncThunk(
   'courses/fetchCourses',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/courses`);
+      const response = await axiosInstance.get(`/api/courses`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || { msg: 'Échec de la récupération des cours' });
@@ -32,14 +47,14 @@ export const addCourseAsync = createAsyncThunk(
       if (courseData.urlVid) formData.append('urlVid', courseData.urlVid);
       if (courseData.pdfFile) formData.append('pdfFile', courseData.pdfFile);
 
-      const response = await axios.post(`${API_BASE_URL}/api/courses/createCourse`, formData, {
+      const response = await axiosInstance.post(`/api/courses/createCourse`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
       toast.success('Cours ajouté avec succès');
       return response.data.course;
     } catch (error) {
-      toast.error('Échec de l\'ajout du cours');
+      toast.error("Échec de l'ajout du cours");
       return rejectWithValue(error.response?.data || { msg: 'Échec de l\'ajout du cours' });
     }
   }
@@ -59,14 +74,14 @@ export const updateCourseAsync = createAsyncThunk(
       if (courseData.urlVid) formData.append('urlVid', courseData.urlVid);
       if (courseData.pdfFile) formData.append('pdfFile', courseData.pdfFile);
 
-      const response = await axios.put(`${API_BASE_URL}/api/courses/${id}`, formData, {
+      const response = await axiosInstance.put(`/api/courses/${id}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
       toast.success('Cours mis à jour avec succès');
       return response.data.course;
     } catch (error) {
-      toast.error('Échec de la mise à jour du cours');
+      toast.error("Échec de la mise à jour du cours");
       return rejectWithValue(error.response?.data || { msg: 'Échec de la mise à jour du cours' });
     }
   }
@@ -77,7 +92,7 @@ export const deleteCourseAsync = createAsyncThunk(
   'courses/deleteCourse',
   async (id, { rejectWithValue }) => {
     try {
-      await axios.delete(`${API_BASE_URL}/api/courses/${id}`);
+      await axiosInstance.delete(`/api/courses/${id}`);
       toast.success('Cours supprimé avec succès');
       return id;
     } catch (error) {
@@ -92,7 +107,7 @@ export const fetchCoursesByClass = createAsyncThunk(
   'courses/fetchCoursesByClass',
   async (classNumber, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/courses/class/${classNumber}`);
+      const response = await axiosInstance.get(`/api/courses/class/${classNumber}`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || { msg: 'Échec de la récupération des cours par classe' });
@@ -105,7 +120,7 @@ export const fetchCoursesByCategory = createAsyncThunk(
   'courses/fetchCoursesByCategory',
   async (category, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/courses/category/${category}`);
+      const response = await axiosInstance.get(`/api/courses/category/${category}`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || { msg: 'Échec de la récupération des cours par catégorie' });
@@ -118,13 +133,15 @@ export const fetchCourseById = createAsyncThunk(
   'courses/fetchCourseById',
   async (id, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/courses/${id}`);
+      const response = await axiosInstance.get(`/api/courses/${id}`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || { msg: 'Échec de la récupération du cours' });
     }
   }
 );
+
+// ======================== SLICE ========================
 
 const initialState = {
   courses: [],
@@ -137,117 +154,48 @@ const courseSlice = createSlice({
   name: 'courses',
   initialState,
   reducers: {
-    clearError: (state) => {
-      state.error = null;
-    },
-    clearCurrentCourse: (state) => {
-      state.currentCourse = null;
-    },
-    clearCourses: (state) => {
-      state.courses = [];
-    }
+    clearError: (state) => { state.error = null; },
+    clearCurrentCourse: (state) => { state.currentCourse = null; },
+    clearCourses: (state) => { state.courses = []; },
   },
   extraReducers: (builder) => {
     builder
-      // Fetch all courses
-      .addCase(fetchCourses.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
+      .addMatcher(
+        (action) => action.type.startsWith("courses/") && action.type.endsWith("/pending"),
+        (state) => {
+          state.loading = true;
+          state.error = null;
+        }
+      )
+      .addMatcher(
+        (action) => action.type.startsWith("courses/") && action.type.endsWith("/rejected"),
+        (state, action) => {
+          state.loading = false;
+          state.error = action.payload?.msg || 'Erreur';
+        }
+      )
       .addCase(fetchCourses.fulfilled, (state, action) => {
         state.loading = false;
         state.courses = action.payload;
-      })
-      .addCase(fetchCourses.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.msg || 'Échec de la récupération des cours';
-      })
-      
-      // Add course
-      .addCase(addCourseAsync.pending, (state) => {
-        state.loading = true;
-        state.error = null;
       })
       .addCase(addCourseAsync.fulfilled, (state, action) => {
         state.loading = false;
         state.courses.push(action.payload);
       })
-      .addCase(addCourseAsync.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.msg || 'Échec de l\'ajout du cours';
-      })
-      
-      // Update course
-      .addCase(updateCourseAsync.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
       .addCase(updateCourseAsync.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.courses.findIndex(course => course._id === action.payload._id);
-        if (index !== -1) {
-          state.courses[index] = action.payload;
-        }
-      })
-      .addCase(updateCourseAsync.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.msg || 'Échec de la mise à jour du cours';
-      })
-      
-      // Delete course
-      .addCase(deleteCourseAsync.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        const index = state.courses.findIndex(
+          (course) => course._id === action.payload._id
+        );
+        if (index !== -1) state.courses[index] = action.payload;
       })
       .addCase(deleteCourseAsync.fulfilled, (state, action) => {
         state.loading = false;
-        state.courses = state.courses.filter(course => course._id !== action.payload);
-      })
-      .addCase(deleteCourseAsync.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.msg || 'Échec de la suppression du cours';
-      })
-      
-      // Fetch courses by class
-      .addCase(fetchCoursesByClass.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchCoursesByClass.fulfilled, (state, action) => {
-        state.loading = false;
-        state.courses = action.payload;
-      })
-      .addCase(fetchCoursesByClass.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.msg || 'Échec de la récupération des cours par classe';
-      })
-      
-      // Fetch courses by category
-      .addCase(fetchCoursesByCategory.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchCoursesByCategory.fulfilled, (state, action) => {
-        state.loading = false;
-        state.courses = action.payload;
-      })
-      .addCase(fetchCoursesByCategory.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.msg || 'Échec de la récupération des cours par catégorie';
-      })
-      
-      // Fetch course by ID
-      .addCase(fetchCourseById.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        state.courses = state.courses.filter(c => c._id !== action.payload);
       })
       .addCase(fetchCourseById.fulfilled, (state, action) => {
         state.loading = false;
         state.currentCourse = action.payload;
-      })
-      .addCase(fetchCourseById.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.msg || 'Échec de la récupération du cours';
       });
   },
 });

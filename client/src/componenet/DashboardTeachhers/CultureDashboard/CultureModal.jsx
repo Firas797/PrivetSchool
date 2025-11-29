@@ -6,7 +6,7 @@ function CultureModal({ item, onClose }) {
       <div style={styles.modal}>
         <h2 style={styles.title}>{item.title}</h2>
         <img
-          src={`https://57.131.24.227${item.image}`}
+          src={`https://privetschool-backend.ohbjmh.easypanel.host${item.image}`}
           alt={item.title}
           style={styles.image}
         />

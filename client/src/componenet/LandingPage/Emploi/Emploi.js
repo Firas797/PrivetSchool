@@ -97,7 +97,7 @@ function Emploi() {
                 {formatClassName(emploi.className || classes[index])}
               </h2>
               <img
-                src={`https://57.131.24.227${emploi.emploiImage}`}
+                src={`https://privetschool-backend.ohbjmh.easypanel.host${emploi.emploiImage}`}
                 alt={`Emploi classe ${emploi.className}`}
                 style={{
                   width: "100%",

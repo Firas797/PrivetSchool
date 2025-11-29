@@ -28,7 +28,7 @@ formData.append("image", image);
       setLoading(true);
       setMessage("");
 
-      const res = await fetch("https://57.131.24.227/api/emplois", {
+      const res = await fetch("https://privetschool-backend.ohbjmh.easypanel.host/api/emplois", {
         method: "POST",
         body: formData,
       });

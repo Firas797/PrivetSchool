@@ -48,10 +48,10 @@ function ProfileStudent() {
 
     const getProfilePicture = () => {
         if (displayStudent.profilePicture) {
-            return `https://57.131.24.227/${displayStudent.profilePicture}`;
+            return `https://privetschool-backend.ohbjmh.easypanel.host/${displayStudent.profilePicture}`;
         }
         if (user?.profilePicture) {
-            return `https://57.131.24.227/${user.profilePicture}`;
+            return `https://privetschool-backend.ohbjmh.easypanel.host/${user.profilePicture}`;
         }
         return "https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3.webp";
     };

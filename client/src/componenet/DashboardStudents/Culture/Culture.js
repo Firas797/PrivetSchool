@@ -6,7 +6,7 @@ function Culture() {
 
   const fetchCultures = async () => {
     try {
-      const res = await fetch("https://57.131.24.227/api/culture");
+      const res = await fetch("https://privetschool-backend.ohbjmh.easypanel.host/api/culture");
       const data = await res.json();
       setCultures(data);
     } catch (err) {
@@ -33,7 +33,7 @@ function Culture() {
           {cultures.map((item) => (
             <div key={item._id} style={styles.card}>
               <img
-                src={`https://57.131.24.227${item.image}`}
+                src={`https://privetschool-backend.ohbjmh.easypanel.host${item.image}`}
                 alt={item.title}
                 style={styles.image}
               />
