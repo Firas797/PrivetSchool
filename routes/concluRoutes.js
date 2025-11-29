@@ -9,10 +9,14 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // Routes
-router.post('/', upload.single('pdfFile'), concluCtrl.createConclusion); // Add new conclusion
-router.get('/', concluCtrl.getAllConclusions); // Get all conclusions
-router.get('/:classe', concluCtrl.getConclusionsByClass); // Get by class
-router.get('/details/:id', concluCtrl.getConclusionById); // Get single conclusion
-router.delete('/:id', concluCtrl.deleteConclusion); // Delete conclusion
+router.post('/', upload.single('pdfFile'), concluCtrl.createConclusion); 
+router.get('/', concluCtrl.getAllConclusions);
 
+// FIXED ✔
+router.get('/details/:id', concluCtrl.getConclusionById); 
+
+// Put this LAST ❗
+router.get('/:classe', concluCtrl.getConclusionsByClass);
+
+router.delete('/:id', concluCtrl.deleteConclusion);
 module.exports = router;
