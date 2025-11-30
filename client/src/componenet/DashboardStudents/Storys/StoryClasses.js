@@ -618,10 +618,10 @@ const allStories = [
       <div className="container">
         {/* Header Section */}
         <div className="text-center mb-4">
-          <h2 style={{color: '#2C3E50', fontFamily: 'Arial, sans-serif'}}>
+          <h2 style={{color: '#f3f7faff', fontFamily: 'Arial, sans-serif'}}>
             📚 مكتبة القصص التعليمية
           </h2>
-          <p className="text-muted">اختر القصص المناسبة لسنك أو استكشف قصص أخرى</p>
+          <p className="text-white">اختر القصص المناسبة لسنك أو استكشف قصص أخرى</p>
         </div>
 
         {/* Class Selection Section */}

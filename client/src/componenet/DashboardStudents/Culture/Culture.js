@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import "./Culture.css";
 
 function Culture() {
   const [cultures, setCultures] = useState([]);
@@ -21,26 +22,52 @@ function Culture() {
   }, []);
 
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>📚 الثقافة العامة</h1>
+    <div className="culture-container">
+      <h1 className="culture-title">📚 الثقافة العامة</h1>
 
       {loading ? (
-        <p style={styles.text}>جاري التحميل...</p>
+        <p className="culture-text">جاري التحميل...</p>
       ) : cultures.length === 0 ? (
-        <p style={styles.text}>محتوى ثقافي متنوع قريباً...</p>
+        <p className="culture-text">محتوى ثقافي متنوع قريباً...</p>
       ) : (
-        <div style={styles.grid}>
+        <div className="culture-grid">
           {cultures.map((item) => (
-            <div key={item._id} style={styles.card}>
+            <div key={item._id} className="culture-card">
               <img
-                src={`https://privetschool-backend.ohbjmh.easypanel.host${item.image}`}
+                src={`http://localhost:5000${item.image}`}
                 alt={item.title}
-                style={styles.image}
+                className="culture-image"
+                onClick={() =>
+                  setSelectedImage(`http://localhost:5000${item.image}`)
+                }
               />
-              <h3 style={styles.cardTitle}>{item.title}</h3>
-              <p style={styles.cardDesc}>{item.description}</p>
+
+              <h3 className="culture-card-title">{item.title}</h3>
+
+              <p className="culture-card-desc">
+                {expanded[item._id]
+                  ? item.description
+                  : item.description.slice(0, 100) +
+                    (item.description.length > 100 ? "..." : "")}
+
+                {item.description.length > 100 && (
+                  <span
+                    className="read-more-btn"
+                    onClick={() => toggleReadMore(item._id)}
+                  >
+                    {expanded[item._id] ? " إظهار أقل" : " اقرأ المزيد"}
+                  </span>
+                )}
+              </p>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* IMAGE MODAL */}
+      {selectedImage && (
+        <div className="image-modal" onClick={() => setSelectedImage(null)}>
+          <img src={selectedImage} className="image-modal-content" alt="Full" />
         </div>
       )}
     </div>

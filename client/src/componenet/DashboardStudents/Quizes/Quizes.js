@@ -120,8 +120,8 @@ function Quizes() {
   const renderQuizList = () => (
     <div className="quiz-list">
       <div className="quiz-header">
-        <h2>📚 الاختبارات المتاحة للصف {studentClassLevel}</h2>
-        <p>اختر اختبارًا لاختبار معرفتك!</p>
+        <h2 className='text-white'>📚 الاختبارات المتاحة للصف {studentClassLevel}</h2>
+        <p className='text-white'>اختر اختبارًا لاختبار معرفتك!</p>
       </div>
 
       {renderProgressBar()}

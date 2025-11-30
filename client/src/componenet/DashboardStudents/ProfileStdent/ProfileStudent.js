@@ -95,7 +95,7 @@ function ProfileStudent() {
 
     if (children.length === 0) {
         return (
-            <section style={{ backgroundColor: '#eee' }}>
+            <section className='global-background'>
                 <MDBContainer className="py-5">
                     <MDBRow className="justify-content-center">
                         <MDBCol lg="8">
@@ -114,7 +114,7 @@ function ProfileStudent() {
     }
 
     return (
-        <section style={{ backgroundColor: '#eee' }}>
+        <section className='global-background'>
             <input
                 type="file"
                 ref={fileInputRef}
@@ -127,8 +127,9 @@ function ProfileStudent() {
                 <MDBRow className="justify-content-center">
                     <MDBCol lg="12">
                         <div className="text-center mb-4">
-                            <h1 className="fw-bold">هذا موقعك الخاص</h1>
-                            <p className="text-muted">مرحباً بك في صفحتك الشخصية</p>
+                            <h1 className="text-white">هذا موقعك الخاص</h1>
+                             <p className="text-white">مرحباً بك في صفحتك الشخصية</p>
+
                             {children.length > 1 && (
                                 <div className="badge bg-primary mb-2">
                                     {children.length} طالب
@@ -225,7 +226,7 @@ function ProfileStudent() {
                     <MDBCol lg="8" className="order-2">
                         <MDBCard className="mb-4">
                             <MDBCardBody>
-                                <div className="d-flex justify-content-between align-items-center mb-4">
+                                <div className=" justify-content-between align-items-center mb-4">
                                     <h4 className="mb-0">المعلومات الشخصية</h4>
                                     {children.length > 1 && (
                                         <span className="badge bg-info">

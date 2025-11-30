@@ -16,6 +16,7 @@
   }
 }
 
+
 .App-header {
   background-color: #282c34;
   min-height: 100vh;
@@ -39,6 +40,18 @@
     transform: rotate(360deg);
   }
 }
+
+
+/* Global background for all pages */
+.global-background {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  font-family: 'Inter', 'Segoe UI', 'Tajawal', sans-serif;
+  padding-bottom: 40px;
+}
+
+
+
 /* Navbar Improvements */
 .fables-navigation {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
