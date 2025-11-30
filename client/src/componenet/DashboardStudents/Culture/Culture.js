@@ -5,9 +5,22 @@ function Culture() {
   const [cultures, setCultures] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // 🖼️ Image Modal State
+  const [selectedImage, setSelectedImage] = useState(null);
+
+  // 📖 Read More State
+  const [expanded, setExpanded] = useState({});
+
+  // 📌 Toggle Read More
+  const toggleReadMore = (id) => {
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
   const fetchCultures = async () => {
     try {
-      const res = await fetch("https://privetschool-backend.ohbjmh.easypanel.host/api/culture");
+      const res = await fetch(
+        "https://privetschool-backend.ohbjmh.easypanel.host/api/culture"
+      );
       const data = await res.json();
       setCultures(data);
     } catch (err) {
@@ -33,6 +46,7 @@ function Culture() {
         <div className="culture-grid">
           {cultures.map((item) => (
             <div key={item._id} className="culture-card">
+              {/* IMAGE + MODAL TRIGGER */}
               <img
                 src={`http://localhost:5000${item.image}`}
                 alt={item.title}
@@ -42,8 +56,10 @@ function Culture() {
                 }
               />
 
+              {/* TITLE */}
               <h3 className="culture-card-title">{item.title}</h3>
 
+              {/* DESCRIPTION + READ MORE */}
               <p className="culture-card-desc">
                 {expanded[item._id]
                   ? item.description
@@ -73,54 +89,5 @@ function Culture() {
     </div>
   );
 }
-
-const styles = {
-  container: {
-    backgroundColor: "#f9fafb",
-    minHeight: "100vh",
-    padding: "40px 20px",
-    textAlign: "center",
-    direction: "rtl", // ✅ Arabic text direction
-  },
-  title: {
-    fontSize: "28px",
-    fontWeight: "bold",
-    color: "#1e40af",
-    marginBottom: "30px",
-  },
-  text: {
-    color: "#4b5563",
-    fontSize: "18px",
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-    gap: "20px",
-  },
-  card: {
-    background: "#fff",
-    borderRadius: "12px",
-    padding: "16px",
-    boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-    textAlign: "center",
-  },
-  image: {
-    width: "100%",
-    height: "180px",
-    objectFit: "cover",
-    borderRadius: "10px",
-  },
-  cardTitle: {
-    fontSize: "20px",
-    fontWeight: "600",
-    marginTop: "10px",
-    color: "#1e3a8a",
-  },
-  cardDesc: {
-    color: "#374151",
-    marginTop: "10px",
-    lineHeight: "1.6",
-  },
-};
 
 export default Culture;
