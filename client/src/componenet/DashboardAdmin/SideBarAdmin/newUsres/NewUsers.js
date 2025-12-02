@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || "https://privetschool-backend.ohbjmh.easypanel.host";
+
 const NewUsers = () => {
   const [newUsers, setNewUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -10,15 +12,29 @@ const NewUsers = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const response = await axios.get("/user/new-inscriptions", {
+      
+      console.log("Fetching new users from:", `${API_BASE_URL}/user/new-inscriptions`);
+      console.log("Token exists:", !!token);
+      
+      const response = await axios.get(`${API_BASE_URL}/user/new-inscriptions`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
+      console.log("API Response:", response);
+      console.log("Response data:", response.data);
+      
       // ✅ Ensure response.data is always an array
-      setNewUsers(Array.isArray(response.data) ? response.data : []);
+      const users = Array.isArray(response.data) ? response.data : [];
+      setNewUsers(users);
+      
+      console.log("Set newUsers to:", users);
+      
     } catch (err) {
+      console.error("Error fetching new users:", err);
+      console.error("Error response:", err.response);
+      
       toast.error(
         err.response?.data?.msg ||
           "Erreur lors de la récupération des nouveaux utilisateurs."
@@ -33,7 +49,7 @@ const NewUsers = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.patch(
-        `/user/mark-user-reviewed/${userId}`,
+        `${API_BASE_URL}/user/mark-user-reviewed/${userId}`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -55,7 +71,12 @@ const NewUsers = () => {
 
   if (loading) return <p>Chargement des nouveaux utilisateurs...</p>;
   if (!Array.isArray(newUsers) || newUsers.length === 0)
-    return <p>Pas de nouveaux utilisateurs pour le moment.</p>;
+    return (
+      <div className="container mt-4 mr-4">
+        <h2 className="fw-bold pr-4 mr-4">Nouveaux utilisateurs inscrits</h2>
+        <p className="mt-3">Pas de nouveaux utilisateurs pour le moment.</p>
+      </div>
+    );
 
   return (
     <div className="container mt-4 mr-4">
