@@ -44,11 +44,11 @@ export const loginUser = createAsyncThunk(
       if (!finalToken) throw new Error('No token returned');
       localStorage.setItem('token', finalToken);
       if (user) localStorage.setItem('user', JSON.stringify(user));
-      toast.success('Login successful');
+      toast.success('Connexion réussie');
       return { user, token: finalToken };
     } catch (error) {
       console.error('Login Error:', error.response?.data || error.message);
-      return rejectWithValue(error.response?.data || { msg: 'Login failed' });
+      return rejectWithValue(error.response?.data || { msg: 'Échec de la connexion' });
     }
   }
 );
@@ -63,10 +63,10 @@ export const registerUser = createAsyncThunk(
       const finalToken = access_token || token;
       if (finalToken) localStorage.setItem('token', finalToken);
       if (user) localStorage.setItem('user', JSON.stringify(user));
-      toast.success('Registration successful');
+      toast.success('Inscription réussie');
       return { user, token: finalToken };
     } catch (error) {
-      const message = error.response?.data?.msg || error.response?.data?.message || 'Registration failed';
+      const message = error.response?.data?.msg || error.response?.data?.message || 'Échec de l\'inscription';
       return rejectWithValue({ msg: message });
     }
   }
@@ -83,7 +83,7 @@ export const refreshToken = createAsyncThunk(
       if (user) localStorage.setItem('user', JSON.stringify(user));
       return { token: access_token, user };
     } catch (error) {
-      return rejectWithValue(error.response?.data || { msg: 'Token refresh failed' });
+      return rejectWithValue(error.response?.data || { msg: 'Échec du rafraîchissement du token' });
     }
   }
 );
@@ -96,7 +96,7 @@ export const fetchAllUsers = createAsyncThunk(
       const response = await axiosInstance.get('/user/all_users');
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || { msg: 'Fetching users failed' });
+      return rejectWithValue(error.response?.data || { msg: 'Échec de la récupération des utilisateurs' });
     }
   }
 );
@@ -114,7 +114,7 @@ export const updateProfilePicture = createAsyncThunk(
       });
       return { ...response.data, childId };
     } catch (error) {
-      return rejectWithValue(error.response?.data || { msg: 'Profile picture update failed' });
+      return rejectWithValue(error.response?.data || { msg: 'Échec de la mise à jour de la photo de profil' });
     }
   }
 );
@@ -127,7 +127,7 @@ export const updateUserInfo = createAsyncThunk(
       const response = await axiosInstance.patch('/user/update', userData);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || { msg: 'Update failed' });
+      return rejectWithValue(error.response?.data || { msg: 'Échec de la mise à jour' });
     }
   }
 );
@@ -141,7 +141,7 @@ export const refreshUserData = createAsyncThunk(
       if (response.data) localStorage.setItem('user', JSON.stringify(response.data));
       return response.data || null;
     } catch (error) {
-      return rejectWithValue(error.response?.data || { msg: 'Failed to refresh user data' });
+      return rejectWithValue(error.response?.data || { msg: 'Échec du rafraîchissement des données utilisateur' });
     }
   }
 );
@@ -154,7 +154,7 @@ export const getNewUsers = createAsyncThunk(
       const response = await axiosInstance.get('/user/new-inscriptions');
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || { msg: 'Failed to fetch new users' });
+      return rejectWithValue(error.response?.data || { msg: 'Échec de la récupération des nouveaux utilisateurs' });
     }
   }
 );
@@ -167,7 +167,7 @@ export const markUserAsSeen = createAsyncThunk(
       const response = await axiosInstance.patch(`/user/mark-user-reviewed/${userId}`);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || { msg: 'Failed to mark user as seen' });
+      return rejectWithValue(error.response?.data || { msg: 'Échec du marquage de l\'utilisateur comme vu' });
     }
   }
 );
@@ -180,7 +180,7 @@ export const updateQuizScore = createAsyncThunk(
       const response = await axiosInstance.post('/user/update_quiz_score', quizData);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || { msg: 'Failed to update quiz score' });
+      return rejectWithValue(error.response?.data || { msg: 'Échec de la mise à jour du score du quiz' });
     }
   }
 );
@@ -193,12 +193,12 @@ export const logoutUser = createAsyncThunk(
       await axiosInstance.get('/user/logout').catch(() => null); // optional backend logout
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      toast.info('Logged out successfully');
-      return { msg: 'Logged out' };
+      toast.info('Déconnexion réussie');
+      return { msg: 'Déconnecté' };
     } catch (error) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      return rejectWithValue({ msg: 'Logout completed locally' });
+      return rejectWithValue({ msg: 'Déconnexion effectuée localement' });
     }
   }
 );
@@ -252,7 +252,7 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.msg || 'Login failed';
+        state.error = action.payload?.msg || 'Échec de la connexion';
         toast.error(state.error);
       })
       // Register
@@ -268,7 +268,7 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.msg || 'Registration failed';
+        state.error = action.payload?.msg || 'Échec de l\'inscription';
         toast.error(state.error);
       })
       // Logout
@@ -303,11 +303,11 @@ const authSlice = createSlice({
           }
           localStorage.setItem('user', JSON.stringify(state.user));
         }
-        toast.success('Profile picture updated successfully');
+        toast.success('Photo de profil mise à jour avec succès');
       })
       .addCase(updateProfilePicture.rejected, (state, action) => {
         state.profilePictureLoading = false;
-        state.error = action.payload?.msg || 'Profile picture update failed';
+        state.error = action.payload?.msg || 'Échec de la mise à jour de la photo de profil';
         toast.error(state.error);
       })
       // Update user info
@@ -316,10 +316,10 @@ const authSlice = createSlice({
           state.user = { ...state.user, ...action.payload.user };
           localStorage.setItem('user', JSON.stringify(state.user));
         }
-        toast.success('Profile updated successfully');
+        toast.success('Profil mis à jour avec succès');
       })
       .addCase(updateUserInfo.rejected, (state, action) => {
-        state.error = action.payload?.msg || 'Profile update failed';
+        state.error = action.payload?.msg || 'Échec de la mise à jour du profil';
         toast.error(state.error);
       })
       // Get new users
@@ -327,16 +327,16 @@ const authSlice = createSlice({
         state.newUsers = action.payload;
       })
       .addCase(getNewUsers.rejected, (state, action) => {
-        state.error = action.payload?.msg || 'Failed to fetch new users';
+        state.error = action.payload?.msg || 'Échec de la récupération des nouveaux utilisateurs';
       })
       // Mark user as seen
       .addCase(markUserAsSeen.fulfilled, (state, action) => {
         const updatedUser = action.payload.user;
         state.newUsers = state.newUsers.filter(user => user._id !== updatedUser._id);
-        toast.success('User marked as seen');
+        toast.success('Utilisateur marqué comme vu');
       })
       .addCase(markUserAsSeen.rejected, (state, action) => {
-        state.error = action.payload?.msg || 'Failed to mark user as seen';
+        state.error = action.payload?.msg || 'Échec du marquage de l\'utilisateur comme vu';
         toast.error(state.error);
       })
       // Update quiz score
@@ -345,10 +345,10 @@ const authSlice = createSlice({
           state.user.quizScores = action.payload.quizScores;
           localStorage.setItem('user', JSON.stringify(state.user));
         }
-        toast.success('Quiz score updated successfully');
+        toast.success('Score du quiz mis à jour avec succès');
       })
       .addCase(updateQuizScore.rejected, (state, action) => {
-        state.error = action.payload?.msg || 'Failed to update quiz score';
+        state.error = action.payload?.msg || 'Échec de la mise à jour du score du quiz';
         toast.error(state.error);
       });
   },
