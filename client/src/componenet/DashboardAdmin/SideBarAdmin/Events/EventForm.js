@@ -142,7 +142,9 @@ const EventForm = ({ event, onClose, onSuccess }) => {
             border-radius: 12px;
             width: 600px;
             max-width: 95%;
-            padding: 20px 25px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
             animation: fadeIn 0.3s ease;
           }
@@ -154,20 +156,35 @@ const EventForm = ({ event, onClose, onSuccess }) => {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            padding: 20px 25px;
+            border-bottom: 1px solid #eee;
+            flex-shrink: 0;
           }
           .modal-header h2 {
             margin: 0;
             color: #333;
+            font-size: 1.5rem;
           }
           .close-button {
             border: none;
             background: transparent;
-            font-size: 24px;
+            font-size: 28px;
             cursor: pointer;
             color: #666;
+            line-height: 1;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
           }
           .close-button:hover { color: #000; }
+          .modal-body {
+            padding: 20px 25px;
+            overflow-y: auto;
+            flex: 1;
+          }
           .event-form {
             display: flex;
             flex-direction: column;
@@ -181,6 +198,7 @@ const EventForm = ({ event, onClose, onSuccess }) => {
             font-weight: 600;
             margin-bottom: 5px;
             color: #444;
+            font-size: 14px;
           }
           .form-group input,
           .form-group textarea,
@@ -190,6 +208,7 @@ const EventForm = ({ event, onClose, onSuccess }) => {
             border-radius: 6px;
             font-size: 14px;
             transition: all 0.2s;
+            font-family: inherit;
           }
           .form-group input:focus,
           .form-group textarea:focus,
@@ -209,18 +228,28 @@ const EventForm = ({ event, onClose, onSuccess }) => {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
+            margin-top: 5px;
           }
           .checkbox-label {
             display: flex;
             align-items: center;
             gap: 5px;
             font-size: 14px;
+            font-weight: normal;
+            cursor: pointer;
+          }
+          .checkbox-label input[type="checkbox"] {
+            margin: 0;
+            cursor: pointer;
           }
           .form-actions {
             display: flex;
             justify-content: flex-end;
             gap: 10px;
-            margin-top: 15px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            flex-shrink: 0;
           }
           .btn {
             padding: 10px 18px;
@@ -228,6 +257,8 @@ const EventForm = ({ event, onClose, onSuccess }) => {
             border: none;
             cursor: pointer;
             font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
           }
           .btn-primary {
             background: #007bff;
@@ -245,12 +276,47 @@ const EventForm = ({ event, onClose, onSuccess }) => {
             background: #f1f1f1;
           }
           .error {
-            border-color: #e74c3c;
+            border-color: #e74c3c !important;
           }
           .error-text {
             color: #e74c3c;
             font-size: 13px;
             margin-top: 3px;
+          }
+          textarea {
+            resize: vertical;
+            min-height: 80px;
+          }
+          
+          /* Responsive adjustments */
+          @media (max-width: 768px) {
+            .modal-content {
+              width: 95%;
+              max-height: 85vh;
+              margin: 10px;
+            }
+            .form-row {
+              flex-direction: column;
+              gap: 15px;
+            }
+            .checkbox-group {
+              grid-template-columns: 1fr;
+            }
+          }
+          
+          @media (max-width: 480px) {
+            .modal-header {
+              padding: 15px 20px;
+            }
+            .modal-body {
+              padding: 15px 20px;
+            }
+            .form-actions {
+              flex-direction: column-reverse;
+            }
+            .form-actions .btn {
+              width: 100%;
+            }
           }
         `}
       </style>
@@ -259,192 +325,194 @@ const EventForm = ({ event, onClose, onSuccess }) => {
         <div className="modal-content">
           <div className="modal-header">
             <h2>{event ? 'Modifier un évènement' : 'Créer un nouvel évènement'}</h2>
-            <button className="close-button" onClick={onClose}>×</button>
+            <button className="close-button" onClick={onClose} aria-label="Fermer">×</button>
           </div>
 
-          <form onSubmit={handleSubmit} className="event-form">
-            <div className="form-group">
-              <label htmlFor="title">Titre de l’évènement *</label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                className={errors.title ? 'error' : ''}
-              />
-              {errors.title && <span className="error-text">{errors.title}</span>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="description">Description *</label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows="4"
-                className={errors.description ? 'error' : ''}
-              />
-              {errors.description && <span className="error-text">{errors.description}</span>}
-            </div>
-
-            <div className="form-row">
+          <div className="modal-body">
+            <form onSubmit={handleSubmit} className="event-form">
               <div className="form-group">
-                <label htmlFor="date">Date *</label>
-                <input
-                  type="date"
-                  id="date"
-                  name="date"
-                  value={formData.date}
-                  onChange={handleChange}
-                  className={errors.date ? 'error' : ''}
-                />
-                {errors.date && <span className="error-text">{errors.date}</span>}
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="time">Heure *</label>
-                <input
-                  type="time"
-                  id="time"
-                  name="time"
-                  value={formData.time}
-                  onChange={handleChange}
-                  className={errors.time ? 'error' : ''}
-                />
-                {errors.time && <span className="error-text">{errors.time}</span>}
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="location">Lieu *</label>
-              <input
-                type="text"
-                id="location"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                className={errors.location ? 'error' : ''}
-              />
-              {errors.location && <span className="error-text">{errors.location}</span>}
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="category">Catégorie *</label>
-                <select
-                  id="category"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                >
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="maxParticipants">Nombre max. de participants</label>
-                <input
-                  type="number"
-                  id="maxParticipants"
-                  name="maxParticipants"
-                  value={formData.maxParticipants}
-                  onChange={handleChange}
-                  min="1"
-                  className={errors.maxParticipants ? 'error' : ''}
-                />
-                {errors.maxParticipants && (
-                  <span className="error-text">{errors.maxParticipants}</span>
-                )}
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label>Public cible</label>
-              <div className="checkbox-group">
-                {audienceOptions.map((option) => (
-                  <label key={option.value} className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      value={option.value}
-                      checked={formData.targetAudience.includes(option.value)}
-                      onChange={handleChange}
-                    />
-                    {option.label}
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="organizer">Organisateur *</label>
+                <label htmlFor="title">Titre de l'évènement *</label>
                 <input
                   type="text"
-                  id="organizer"
-                  name="organizer"
-                  value={formData.organizer}
+                  id="title"
+                  name="title"
+                  value={formData.title}
                   onChange={handleChange}
-                  className={errors.organizer ? 'error' : ''}
+                  className={errors.title ? 'error' : ''}
                 />
-                {errors.organizer && (
-                  <span className="error-text">{errors.organizer}</span>
-                )}
+                {errors.title && <span className="error-text">{errors.title}</span>}
               </div>
 
               <div className="form-group">
-                <label htmlFor="contactEmail">Email de contact *</label>
-                <input
-                  type="email"
-                  id="contactEmail"
-                  name="contactEmail"
-                  value={formData.contactEmail}
+                <label htmlFor="description">Description *</label>
+                <textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
                   onChange={handleChange}
-                  className={errors.contactEmail ? 'error' : ''}
+                  rows="4"
+                  className={errors.description ? 'error' : ''}
                 />
-                {errors.contactEmail && (
-                  <span className="error-text">{errors.contactEmail}</span>
-                )}
+                {errors.description && <span className="error-text">{errors.description}</span>}
               </div>
-            </div>
 
-            <div className="form-group">
-              <label htmlFor="registrationDeadline">Date limite d’inscription</label>
-              <input
-                type="date"
-                id="registrationDeadline"
-                name="registrationDeadline"
-                value={formData.registrationDeadline}
-                onChange={handleChange}
-              />
-            </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="date">Date *</label>
+                  <input
+                    type="date"
+                    id="date"
+                    name="date"
+                    value={formData.date}
+                    onChange={handleChange}
+                    className={errors.date ? 'error' : ''}
+                  />
+                  {errors.date && <span className="error-text">{errors.date}</span>}
+                </div>
 
-            <div className="form-group">
-              <label htmlFor="imageUrl">URL de l’image</label>
-              <input
-                type="url"
-                id="imageUrl"
-                name="imageUrl"
-                value={formData.imageUrl}
-                onChange={handleChange}
-                placeholder="https://exemple.com/image.jpg"
-              />
-            </div>
+                <div className="form-group">
+                  <label htmlFor="time">Heure *</label>
+                  <input
+                    type="time"
+                    id="time"
+                    name="time"
+                    value={formData.time}
+                    onChange={handleChange}
+                    className={errors.time ? 'error' : ''}
+                  />
+                  {errors.time && <span className="error-text">{errors.time}</span>}
+                </div>
+              </div>
 
-            <div className="form-actions">
-              <button type="button" onClick={onClose} className="btn btn-outline">
-                Annuler
-              </button>
-              <button type="submit" className="btn btn-primary">
-                {event ? 'Mettre à jour' : 'Créer'}
-              </button>
-            </div>
-          </form>
+              <div className="form-group">
+                <label htmlFor="location">Lieu *</label>
+                <input
+                  type="text"
+                  id="location"
+                  name="location"
+                  value={formData.location}
+                  onChange={handleChange}
+                  className={errors.location ? 'error' : ''}
+                />
+                {errors.location && <span className="error-text">{errors.location}</span>}
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="category">Catégorie *</label>
+                  <select
+                    id="category"
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                  >
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="maxParticipants">Nombre max. de participants</label>
+                  <input
+                    type="number"
+                    id="maxParticipants"
+                    name="maxParticipants"
+                    value={formData.maxParticipants}
+                    onChange={handleChange}
+                    min="1"
+                    className={errors.maxParticipants ? 'error' : ''}
+                  />
+                  {errors.maxParticipants && (
+                    <span className="error-text">{errors.maxParticipants}</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Public cible</label>
+                <div className="checkbox-group">
+                  {audienceOptions.map((option) => (
+                    <label key={option.value} className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        value={option.value}
+                        checked={formData.targetAudience.includes(option.value)}
+                        onChange={handleChange}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="organizer">Organisateur *</label>
+                  <input
+                    type="text"
+                    id="organizer"
+                    name="organizer"
+                    value={formData.organizer}
+                    onChange={handleChange}
+                    className={errors.organizer ? 'error' : ''}
+                  />
+                  {errors.organizer && (
+                    <span className="error-text">{errors.organizer}</span>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="contactEmail">Email de contact *</label>
+                  <input
+                    type="email"
+                    id="contactEmail"
+                    name="contactEmail"
+                    value={formData.contactEmail}
+                    onChange={handleChange}
+                    className={errors.contactEmail ? 'error' : ''}
+                  />
+                  {errors.contactEmail && (
+                    <span className="error-text">{errors.contactEmail}</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="registrationDeadline">Date limite d'inscription</label>
+                <input
+                  type="date"
+                  id="registrationDeadline"
+                  name="registrationDeadline"
+                  value={formData.registrationDeadline}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="imageUrl">URL de l'image</label>
+                <input
+                  type="url"
+                  id="imageUrl"
+                  name="imageUrl"
+                  value={formData.imageUrl}
+                  onChange={handleChange}
+                  placeholder="https://exemple.com/image.jpg"
+                />
+              </div>
+
+              <div className="form-actions">
+                <button type="button" onClick={onClose} className="btn btn-outline">
+                  Annuler
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  {event ? 'Mettre à jour' : 'Créer'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </>
