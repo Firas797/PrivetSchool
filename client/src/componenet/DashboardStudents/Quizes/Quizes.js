@@ -13,7 +13,13 @@ function Quizes() {
   const [answers, setAnswers] = useState([]);
   const [quizResult, setQuizResult] = useState(null);
   const [completedQuizzes, setCompletedQuizzes] = useState(() => {
-    return JSON.parse(localStorage.getItem('completedQuizzes') || '[]');
+    try {
+      const stored = localStorage.getItem('completedQuizzes');
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      console.error('Error parsing completedQuizzes:', error);
+      return [];
+    }
   });
 
   const [filter, setFilter] = useState({
@@ -32,22 +38,84 @@ function Quizes() {
   const fetchQuizzes = async () => {
     try {
       setLoading(true);
+      setError('');
+      
+      const API_BASE_URL = process.env.REACT_APP_API_URL || "https://privetschool-backend.ohbjmh.easypanel.host";
+      
       const params = new URLSearchParams({
         classLevel: studentClassLevel,
         ...filter
       });
-      const response = await axios.get(`/api/quizzes?${params}`);
-      setQuizzes(response.data);
-      setError('');
+      
+      console.log('Fetching quizzes from:', `${API_BASE_URL}/api/quizzes?${params}`);
+      
+      // Get token from localStorage if available
+      const token = localStorage.getItem('token');
+      const config = token ? {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      } : {};
+      
+      const response = await axios.get(`${API_BASE_URL}/api/quizzes?${params}`, config);
+      
+      console.log('API Response:', response.data);
+      
+      // Handle different response formats
+      let quizzesData = [];
+      
+      if (Array.isArray(response.data)) {
+        // Case 1: Response is already an array
+        quizzesData = response.data;
+      } else if (response.data && Array.isArray(response.data.quizzes)) {
+        // Case 2: Response has a quizzes property
+        quizzesData = response.data.quizzes;
+      } else if (response.data && Array.isArray(response.data.data)) {
+        // Case 3: Response has a data property
+        quizzesData = response.data.data;
+      } else {
+        // Case 4: Response is not in expected format
+        console.warn('Unexpected API response format:', response.data);
+        quizzesData = [];
+      }
+      
+      setQuizzes(quizzesData);
+      
+      if (quizzesData.length === 0) {
+        setError('لا توجد اختبارات متاحة لمستوى صفك');
+      }
+      
     } catch (err) {
-      console.error('فشل في جلب الاختبارات:', err);
-      setError('فشل في تحميل الاختبارات');
+      console.error('فشل في جلب الاختبارات:', {
+        message: err.message,
+        status: err.response?.status,
+        data: err.response?.data
+      });
+      
+      // Better error messages
+      if (err.response?.status === 401) {
+        setError('يرجى تسجيل الدخول للوصول للاختبارات');
+      } else if (err.response?.status === 404) {
+        setError('لا توجد اختبارات متاحة');
+      } else if (err.message === 'Network Error') {
+        setError('خطأ في الاتصال بالخادم');
+      } else {
+        setError('فشل في تحميل الاختبارات');
+      }
+      
+      setQuizzes([]);
     } finally {
       setLoading(false);
     }
   };
 
   const startQuiz = (quiz) => {
+    if (!quiz || !quiz.questions || !Array.isArray(quiz.questions)) {
+      console.error('Invalid quiz data:', quiz);
+      alert('بيانات الاختبار غير صالحة');
+      return;
+    }
+    
     setSelectedQuiz(quiz);
     setAnswers(new Array(quiz.questions.length).fill(''));
     setQuizResult(null);
@@ -65,11 +133,29 @@ function Quizes() {
         alert('يرجى تسجيل الدخول لتقديم الاختبار');
         return;
       }
+      
+      if (!selectedQuiz?._id) {
+        alert('الاختبار غير صالح');
+        return;
+      }
 
-      const response = await axios.post(`/api/quizzes/${selectedQuiz._id}/attempt`, {
-        userId: user._id,
-        answers: answers
-      });
+      const API_BASE_URL = process.env.REACT_APP_API_URL || "https://privetschool-backend.ohbjmh.easypanel.host";
+      
+      const token = localStorage.getItem('token');
+      const config = token ? {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      } : {};
+
+      const response = await axios.post(
+        `${API_BASE_URL}/api/quizzes/${selectedQuiz._id}/attempt`,
+        {
+          userId: user._id,
+          answers: answers
+        },
+        config
+      );
 
       setQuizResult(response.data);
 
@@ -165,7 +251,19 @@ function Quizes() {
       {loading ? (
         <div className="loading">جاري تحميل الاختبارات...</div>
       ) : error ? (
-        <div className="error-message">{error}</div>
+        <div className="error-message">
+          <p>{error}</p>
+          <button onClick={fetchQuizzes} className="retry-btn">
+            🔄 إعادة المحاولة
+          </button>
+        </div>
+      ) : !Array.isArray(quizzes) ? (
+        <div className="error-message">
+          <p>خطأ في تنسيق البيانات</p>
+          <button onClick={fetchQuizzes} className="retry-btn">
+            🔄 إعادة المحاولة
+          </button>
+        </div>
       ) : quizzes.length === 0 ? (
         <div className="no-quizzes">
           <h3>لا توجد اختبارات متاحة لمستوى صفك</h3>
@@ -173,6 +271,8 @@ function Quizes() {
       ) : (
         <div className="quizzes-grid">
           {quizzes.map((quiz) => {
+            if (!quiz || !quiz._id) return null; // Safety check
+            
             const isDone = completedQuizzes.includes(quiz._id);
             return (
               <div
@@ -180,8 +280,8 @@ function Quizes() {
                 className={`quiz-card ${isDone ? 'completed' : ''}`}
               >
                 <div className="quiz-card-header">
-                  <h3>{quiz.title}</h3>
-                  <span className={`difficulty-badge ${quiz.difficulty}`}>
+                  <h3>{quiz.title || 'بدون عنوان'}</h3>
+                  <span className={`difficulty-badge ${quiz.difficulty || 'easy'}`}>
                     {quiz.difficulty === 'easy'
                       ? 'سهل'
                       : quiz.difficulty === 'medium'
@@ -191,8 +291,8 @@ function Quizes() {
                 </div>
 
                 <div className="quiz-card-info">
-                  <p><strong>المادة:</strong> {quiz.category}</p>
-                  <p><strong>عدد الأسئلة:</strong> {quiz.questions.length}</p>
+                  <p><strong>المادة:</strong> {quiz.category || 'غير محدد'}</p>
+                  <p><strong>عدد الأسئلة:</strong> {quiz.questions?.length || 0}</p>
                   {isDone && <p className="completed-label">✅ مكتمل</p>}
                 </div>
 
@@ -211,98 +311,124 @@ function Quizes() {
     </div>
   );
 
-  const renderQuizTaking = () => (
-    <div className="quiz-taking">
-      <div className="quiz-taking-header">
-        <h2>{selectedQuiz.title}</h2>
-        <div className="quiz-meta">
-          <span>المادة: {selectedQuiz.category}</span>
-          <span>
-            المستوى:{' '}
-            {selectedQuiz.difficulty === 'easy'
-              ? 'سهل'
-              : selectedQuiz.difficulty === 'medium'
-              ? 'متوسط'
-              : 'صعب'}
-          </span>
+  const renderQuizTaking = () => {
+    if (!selectedQuiz) {
+      return (
+        <div className="error-message">
+          <p>الاختبار غير متاح</p>
+          <button onClick={resetQuiz} className="cancel-btn">
+            العودة للقائمة
+          </button>
         </div>
-      </div>
-
-      <div className="questions-container">
-        {selectedQuiz.questions.map((question, index) => (
-          <div key={index} className="question-card">
-            <h4>السؤال {index + 1}</h4>
-            <p className="question-text">{question.question}</p>
-            {selectedQuiz.type === 'multiple-choice' ? (
-              <div className="options-container">
-                {question.options.map((option, i) => (
-                  <label key={i} className="option-label">
-                    <input
-                      type="radio"
-                      name={`q-${index}`}
-                      value={option}
-                      checked={answers[index] === option}
-                      onChange={() => handleAnswerChange(index, option)}
-                    />
-                    <span>{option}</span>
-                  </label>
-                ))}
-              </div>
-            ) : (
-              <input
-                type="text"
-                value={answers[index]}
-                onChange={(e) =>
-                  handleAnswerChange(index, e.target.value)
-                }
-                className="answer-input"
-                placeholder="أدخل إجابتك"
-              />
-            )}
+      );
+    }
+    
+    return (
+      <div className="quiz-taking">
+        <div className="quiz-taking-header">
+          <h2>{selectedQuiz.title || 'اختبار'}</h2>
+          <div className="quiz-meta">
+            <span>المادة: {selectedQuiz.category || 'غير محدد'}</span>
+            <span>
+              المستوى:{' '}
+              {selectedQuiz.difficulty === 'easy'
+                ? 'سهل'
+                : selectedQuiz.difficulty === 'medium'
+                ? 'متوسط'
+                : 'صعب'}
+            </span>
           </div>
-        ))}
-      </div>
+        </div>
 
-      <div className="quiz-actions">
-        <button
-          onClick={submitQuiz}
-          disabled={answers.some((a) => !a)}
-          className="submit-btn"
-        >
-          تقديم الإجابات
-        </button>
-        <button onClick={resetQuiz} className="cancel-btn">
-          إلغاء
-        </button>
-      </div>
-    </div>
-  );
+        <div className="questions-container">
+          {(selectedQuiz.questions || []).map((question, index) => (
+            <div key={index} className="question-card">
+              <h4>السؤال {index + 1}</h4>
+              <p className="question-text">{question?.question || 'سؤال'}</p>
+              {selectedQuiz.type === 'multiple-choice' ? (
+                <div className="options-container">
+                  {(question?.options || []).map((option, i) => (
+                    <label key={i} className="option-label">
+                      <input
+                        type="radio"
+                        name={`q-${index}`}
+                        value={option}
+                        checked={answers[index] === option}
+                        onChange={() => handleAnswerChange(index, option)}
+                      />
+                      <span>{option}</span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={answers[index] || ''}
+                  onChange={(e) =>
+                    handleAnswerChange(index, e.target.value)
+                  }
+                  className="answer-input"
+                  placeholder="أدخل إجابتك"
+                />
+              )}
+            </div>
+          ))}
+        </div>
 
-  const renderQuizResult = () => (
-    <div className="quiz-result">
-      <div
-        className={`result-header ${
-          quizResult.score === 100 ? 'perfect-score' : 'need-improvement'
-        }`}
-      >
-        <h2>نتائج الاختبار</h2>
-        <div className="score-circle">
-          <span className="score-percentage">
-            {Math.round(quizResult.score)}%
-          </span>
+        <div className="quiz-actions">
+          <button
+            onClick={submitQuiz}
+            disabled={answers.some((a) => !a)}
+            className="submit-btn"
+          >
+            تقديم الإجابات
+          </button>
+          <button onClick={resetQuiz} className="cancel-btn">
+            إلغاء
+          </button>
         </div>
       </div>
+    );
+  };
 
-      <div className="result-details">
-        <p><strong>الرسالة:</strong> {quizResult.message}</p>
-        <p><strong>أفضل نتيجة:</strong> {quizResult.bestScore}%</p>
+  const renderQuizResult = () => {
+    if (!quizResult) {
+      return (
+        <div className="quiz-result">
+          <p>لا توجد نتائج</p>
+          <button onClick={resetQuiz} className="try-again-btn">
+            العودة للقائمة
+          </button>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="quiz-result">
+        <div
+          className={`result-header ${
+            quizResult.score === 100 ? 'perfect-score' : 'need-improvement'
+          }`}
+        >
+          <h2>نتائج الاختبار</h2>
+          <div className="score-circle">
+            <span className="score-percentage">
+              {Math.round(quizResult.score || 0)}%
+            </span>
+          </div>
+        </div>
+
+        <div className="result-details">
+          <p><strong>الرسالة:</strong> {quizResult.message || '--'}</p>
+          <p><strong>أفضل نتيجة:</strong> {quizResult.bestScore || 0}%</p>
+        </div>
+
+        <button onClick={resetQuiz} className="try-again-btn">
+          اختبار آخر
+        </button>
       </div>
-
-      <button onClick={resetQuiz} className="try-again-btn">
-        اختبار آخر
-      </button>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="quizes-container">
