@@ -10,14 +10,33 @@ import {
 import EventForm from './EventForm';
 import './Events.css';
 
+// French display mappings for categories
+const CATEGORY_LABELS = {
+  'workshop': 'Atelier',
+  'seminar': 'Séminaire',
+  'social': 'Social',
+  'academic': 'Académique',
+  'sports': 'Sports',
+  'other': 'Autre'
+};
+
+// French display mappings for target audience
+const AUDIENCE_LABELS = {
+  'all': 'Tous',
+  'freshmen': 'Première année',
+  'sophomores': 'Deuxième année',
+  'juniors': 'Troisième année',
+  'seniors': 'Quatrième année',
+  'graduates': 'Diplômés'
+};
+
 const AdminEvents = () => {
   const dispatch = useDispatch();
   const { events, loading, error } = useSelector(state => state.events);
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-const [deletingId, setDeletingId] = useState(null); // 👈 add this at top with useState
-
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     dispatch(fetchEvents({}));
@@ -32,20 +51,21 @@ const [deletingId, setDeletingId] = useState(null); // 👈 add this at top with
     }
   }, [error, dispatch]);
 
-const handleDelete = async (eventId) => {
-  if (window.confirm('Êtes-vous sûr de vouloir supprimer cet évènement ?')) {
-    try {
-      setDeletingId(eventId); // show spinner only for that row
-      await dispatch(deleteEvent(eventId)).unwrap();
-      await dispatch(fetchEvents({})); // refresh events list
-      alert('Évènement supprimé avec succès ✅');
-    } catch (error) {
-      alert("Échec de la suppression de l'évènement : " + error);
-    } finally {
-      setDeletingId(null);
+  const handleDelete = async (eventId) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer cet évènement ?')) {
+      try {
+        setDeletingId(eventId);
+        await dispatch(deleteEvent(eventId)).unwrap();
+        await dispatch(fetchEvents({}));
+        alert('Évènement supprimé avec succès ✅');
+      } catch (error) {
+        alert("Échec de la suppression de l'évènement : " + error);
+      } finally {
+        setDeletingId(null);
+      }
     }
-  }
-};
+  };
+
   const handleEdit = (event) => {
     setEditingEvent(event);
     setShowForm(true);
@@ -63,11 +83,39 @@ const handleDelete = async (eventId) => {
     alert(editingEvent ? 'Évènement mis à jour avec succès !' : 'Évènement créé avec succès !');
   };
 
-  const filteredEvents = events.filter(event =>
-    event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Function to get French label for category
+  const getCategoryLabel = (englishCategory) => {
+    return CATEGORY_LABELS[englishCategory] || englishCategory;
+  };
+
+  // Function to get French label for audience
+  const getAudienceLabel = (englishAudience) => {
+    return AUDIENCE_LABELS[englishAudience] || englishAudience;
+  };
+
+  // Search function that looks in both English and French labels
+  const filteredEvents = events.filter(event => {
+    const searchLower = searchTerm.toLowerCase();
+    
+    // Search in title and description
+    if (event.title.toLowerCase().includes(searchLower) ||
+        event.description.toLowerCase().includes(searchLower)) {
+      return true;
+    }
+    
+    // Search in French category label
+    const frenchCategory = getCategoryLabel(event.category).toLowerCase();
+    if (frenchCategory.includes(searchLower)) {
+      return true;
+    }
+    
+    // Search in English category
+    if (event.category.toLowerCase().includes(searchLower)) {
+      return true;
+    }
+    
+    return false;
+  });
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
@@ -120,7 +168,7 @@ const handleDelete = async (eventId) => {
           />
         </div>
         <div className="stats">
-          <span>Total d’évènements : {events.length}</span>
+          <span>Total d'évènements : {events.length}</span>
           <span>Actifs : {events.filter(e => getStatus(e).class === 'active').length}</span>
         </div>
       </div>
@@ -162,7 +210,7 @@ const handleDelete = async (eventId) => {
                     </td>
                     <td>
                       <span className={`event-category ${event.category}`}>
-                        {event.category}
+                        {getCategoryLabel(event.category)}
                       </span>
                     </td>
                     <td>
@@ -191,14 +239,13 @@ const handleDelete = async (eventId) => {
                         >
                           Modifier
                         </button>
-               <button
-  className="btn btn-danger btn-sm"
-  onClick={() => handleDelete(event._id)}
-  disabled={deletingId === event._id}
->
-  {deletingId === event._id ? 'Suppression...' : 'Supprimer'}
-</button>
-
+                        <button
+                          className="btn btn-danger btn-sm"
+                          onClick={() => handleDelete(event._id)}
+                          disabled={deletingId === event._id}
+                        >
+                          {deletingId === event._id ? 'Suppression...' : 'Supprimer'}
+                        </button>
                       </div>
                     </td>
                   </tr>
