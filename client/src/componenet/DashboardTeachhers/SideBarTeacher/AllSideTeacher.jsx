@@ -8,6 +8,7 @@ import CreateQuizForm from "../Quiz/CreateQuizForm.js"
 import ListStudentsTeacher from '../ListStudentsTeacher/ListStudentsTeacher'
 import CultureDashboard from '../CultureDashboard/CultureDashboard.jsx';
 import Exams from '../Exams/Exams.js';
+import TeacherDashboard from './TeacherDashboard'; // Add this import
 
 function AllSide() {
   const [activePage, setActivePage] = useState('home');
@@ -21,6 +22,11 @@ function AllSide() {
       <SideBarTeach activePage={activePage} handlePageChange={handlePageChange} />
       
       <div className="content">
+         {activePage === 'home' && (
+          <div className="teachersS">
+            <TeacherDashboard />
+          </div>
+            )}
         {activePage === 'C_cours' && (
           <div className="teachersS">
             <CreateCours />

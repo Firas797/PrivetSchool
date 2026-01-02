@@ -46,20 +46,24 @@ function SideBarAdmin({ activePage, handlePageChange }) {
           </li>
         </ul>
       </div>
-        <div className="sidebar-section">
+      
+      <div className="sidebar-section">
         <h3 className="sidebar-section-title">Emploi du temps</h3>
         <ul className="nav-links">
-          <li className={activePage === 'L_NewUsers' ? 'active' : ''}>
+          {/* Fixed: Changed from 'L_NewUsers' to 'L_Emploi' */}
+          <li className={activePage === 'L_Emploi' ? 'active' : ''}>
             <button onClick={() => handlePageChange('L_Emploi')}>
               <FaUserPlus className="icon" /> Ajouter Emploi
             </button>
           </li>
         </ul>
       </div>
+      
       <div className="sidebar-section">
         <h3 className="sidebar-section-title">Evenement</h3>
         <ul className="nav-links">
-          <li className={activePage === 'L_NewUsers' ? 'active' : ''}>
+          {/* Fixed: Changed from 'L_NewUsers' to 'L_Events' */}
+          <li className={activePage === 'L_Events' ? 'active' : ''}>
             <button onClick={() => handlePageChange('L_Events')}>
               <FaUserPlus className="icon" /> Creé evenement
             </button>

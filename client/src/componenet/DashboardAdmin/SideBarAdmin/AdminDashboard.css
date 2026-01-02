@@ -1,0 +1,178 @@
+.admin-dashboard {
+  padding: 20px;
+}
+
+.dashboard-header {
+  background: linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%);
+  color: white;
+  padding: 30px;
+  border-radius: 10px;
+  margin-bottom: 30px;
+}
+
+.dashboard-header h1 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+.welcome-message {
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.dashboard-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.dashboard-card {
+  background: white;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  margin-bottom: 30px;
+}
+
+.dashboard-card h3 {
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+.dashboard-card p {
+  color: #7f8c8d;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 25px;
+  margin-bottom: 40px;
+}
+
+.feature-card {
+  background: white;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  border-left: 5px solid #3498db;
+  transition: all 0.3s ease;
+  height: 100%;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.feature-card h4 {
+  color: #2c3e50;
+  margin-bottom: 12px;
+  font-size: 1.2rem;
+}
+
+.feature-card p {
+  color: #666;
+  margin-bottom: 15px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.feature-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action-badge {
+  background: #ecf0f1;
+  color: #2c3e50;
+  padding: 5px 12px;
+  border-radius: 15px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.quick-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.stat-card {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+}
+
+.stat-card h4 {
+  color: #7f8c8d;
+  margin-bottom: 10px;
+  font-size: 1rem;
+}
+
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .quick-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .dashboard-header {
+    padding: 20px;
+  }
+  
+  .dashboard-header h1 {
+    font-size: 1.5rem;
+  }
+}
+/* Add these styles to your existing AdminDashboard.css */
+
+/* Make feature cards clickable */
+.feature-card.clickable {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.feature-card.clickable:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  border-left: 5px solid #e74c3c;
+}
+
+/* Make badges clickable */
+.action-badge.clickable-badge {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-badge.clickable-badge:hover {
+  background: #3498db;
+  color: white;
+}
+
+/* Make the whole card have a pointer cursor when clickable */
+.feature-card.clickable:hover h4 {
+  color: #e74c3c;
+}
+
+/* Prevent text selection on clickable items */
+.feature-card.clickable,
+.action-badge.clickable-badge {
+  user-select: none;
+}

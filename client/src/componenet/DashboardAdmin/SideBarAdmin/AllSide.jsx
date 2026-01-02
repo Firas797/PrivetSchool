@@ -9,6 +9,8 @@ import ListStudents from './Students/ListStudents';
 import NewUsers from './newUsres/NewUsers'
 import AdminEvents from './Events/AdminEvents';
 import EmploiAdmin from './Emploi/EmploiAdmin';
+import AdminDashboard from './AdminDashboard'; // Add this import
+
 function AllSide() {
   const [activePage, setActivePage] = useState('home');
 
@@ -20,7 +22,11 @@ function AllSide() {
     <div className="sideBarPad">
       <SideBarAdmin activePage={activePage} handlePageChange={handlePageChange} />
       <div className="content">
-
+{activePage === 'home' && (
+          <div className="teachersS">
+            <AdminDashboard />
+          </div>
+        )}
         {activePage === 'C_teachers' && <div> <Teachers/> </div>}
 *        {activePage === 'L_teachers' && <div className='teachersS'> <AllTeachers/> </div>}
 *        {activePage === 'L_Students' && <div className='teachersS'> <ListStudents/> </div>}
