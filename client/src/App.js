@@ -16,6 +16,8 @@ import { refreshUserData } from './redux/LoginRegister/authSlice';
 import DashboardCEO from './componenet/DashboardCeo/DashboardCEO';
 import Emploi from './componenet/LandingPage/Emploi/Emploi';
 import Notifications from './componenet/LandingPage/Notifications/Notifications';
+import ParentsProfile from './componenet/DashboardParents/Parents/ParentsProfile'
+
 function App() {
 
 const isAdmi = useSelector((state)=> state.user?.role)
@@ -62,6 +64,7 @@ const isAdmi = useSelector((state)=> state.user?.role)
                                                   <Route path="/NewUsers" element={<NewUsers/>} />
                        <Route path="/evenements" element={<UserEvents/>} />
 
+                       <Route path="/Parents" element={<ParentsProfile/>} />
 
  
 

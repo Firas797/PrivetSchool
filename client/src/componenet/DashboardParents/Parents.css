@@ -1,0 +1,290 @@
+/* ملف تصميم Parents.css */
+.parents-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  direction: rtl;
+  background-color: #f8f9fa;
+  color: #333;
+  line-height: 1.6;
+  padding: 0;
+  margin: 0;
+  min-height: 100vh;
+}
+
+.parents-header {
+  background: linear-gradient(135deg, #2c3e50 0%, #4a6491 100%);
+  color: white;
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  border-bottom-left-radius: 30px;
+  border-bottom-right-radius: 30px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.header-icon {
+  font-size: 2.2rem;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+.parents-header h1 {
+  font-size: 2.2rem;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.header-subtitle {
+  font-size: 1.1rem;
+  opacity: 0.9;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.intro-section {
+  padding: 2rem 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.intro-card {
+  background-color: white;
+  border-radius: 15px;
+  padding: 2rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  border-right: 5px solid #3498db;
+}
+
+.intro-card h2 {
+  color: #2c3e50;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.8rem;
+}
+
+.intro-card p {
+  font-size: 1.1rem;
+  color: #555;
+}
+
+.advice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  padding: 2rem 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.advice-card {
+  background-color: white;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-top: 4px solid #3498db;
+}
+
+.advice-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+}
+
+.card-icon {
+  font-size: 2rem;
+  margin-left: 15px;
+}
+
+.card-header h3 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.4rem;
+}
+
+.tips-list {
+  list-style-type: none;
+  padding: 1.5rem;
+  margin: 0;
+}
+
+.tip-item {
+  padding: 0.8rem 0;
+  border-bottom: 1px dashed #eee;
+  display: flex;
+  align-items: flex-start;
+}
+
+.tip-item:last-child {
+  border-bottom: none;
+}
+
+.tip-bullet {
+  color: #2ecc71;
+  font-weight: bold;
+  margin-left: 10px;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.habits-section {
+  padding: 2rem 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.habits-section h2 {
+  color: #2c3e50;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+}
+
+.section-icon {
+  margin-left: 10px;
+  font-size: 1.8rem;
+}
+
+.habits-table {
+  background-color: white;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.habits-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.habits-table th {
+  background-color: #3498db;
+  color: white;
+  padding: 1.2rem;
+  text-align: right;
+  font-weight: 600;
+}
+
+.habits-table td {
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid #eee;
+}
+
+.habits-table tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+.habits-table tr:hover {
+  background-color: #e8f4fc;
+}
+
+.final-advice {
+  padding: 2rem 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.final-card {
+  background: linear-gradient(135deg, #fdfcfb 0%, #f5f7fa 100%);
+  border-radius: 15px;
+  padding: 2.5rem;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e6ef;
+  text-align: center;
+}
+
+.final-card h2 {
+  color: #2c3e50;
+  margin-top: 0;
+  font-size: 1.8rem;
+}
+
+.heart-icon {
+  color: #e74c3c;
+  margin-left: 10px;
+}
+
+.final-card p {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: #555;
+  max-width: 800px;
+  margin: 1.5rem auto;
+}
+
+.quote {
+  font-style: italic;
+  font-size: 1.2rem;
+  color: #7f8c8d;
+  padding: 1.5rem;
+  border-right: 3px solid #3498db;
+  background-color: rgba(52, 152, 219, 0.05);
+  border-radius: 10px;
+  margin-top: 1.5rem;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.parents-footer {
+  background-color: #2c3e50;
+  color: #ecf0f1;
+  text-align: center;
+  padding: 1.5rem;
+  margin-top: 2rem;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+}
+
+.parents-footer p {
+  margin: 0.5rem 0;
+}
+
+/* تصميم متجاوب */
+@media (max-width: 768px) {
+  .parents-header h1 {
+    font-size: 1.8rem;
+  }
+  
+  .advice-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .habits-table table {
+    display: block;
+    overflow-x: auto;
+  }
+  
+  .intro-card, .advice-card, .final-card {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .parents-header {
+    padding: 1.5rem 1rem;
+  }
+  
+  .parents-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .header-subtitle {
+    font-size: 1rem;
+  }
+  
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .card-icon {
+    margin-bottom: 10px;
+  }
+}
