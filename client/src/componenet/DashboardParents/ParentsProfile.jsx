@@ -1,6 +1,6 @@
 import React from 'react';
 import './Parents.css';
-import Navbar from '../../LandingPage/Navbar/Navbar';
+import Navbar from '../LandingPage/Navbar/Navbar';
 
 const ParentsProfile = () => {
   const adviceCategories = [
