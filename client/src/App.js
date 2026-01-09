@@ -16,7 +16,7 @@ import { refreshUserData } from './redux/LoginRegister/authSlice';
 import DashboardCEO from './componenet/DashboardCeo/DashboardCEO';
 import Emploi from './componenet/LandingPage/Emploi/Emploi';
 import Notifications from './componenet/LandingPage/Notifications/Notifications';
-import ParentsProfile from './componenet/DashboardParents/Parents/ParentsProfile'
+import ParentsProfile from './componenet/DashboardParents/ParentsProfile'
 
 function App() {
 
