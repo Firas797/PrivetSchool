@@ -166,7 +166,7 @@ function Navbar() {
 
                     {/* User Profile */}
                     <Link
-                      to="/profile"
+                      to="/Parents"
                       className="d-flex align-items-center text-white mx-2 text-decoration-none"
                       style={{ padding: "8px 12px" }}
                     >
