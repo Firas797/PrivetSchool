@@ -6,7 +6,7 @@ import Tab from 'react-bootstrap/Tab';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import './Student.css';
-import imgHeader from './smile.jpg';
+import imgHeader from './smile.png';
 import ProfilePage from './ProfileStdent/ProfileStudent';
 import { 
   FaSpaceShuttle, 
