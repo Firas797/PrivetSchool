@@ -48,11 +48,11 @@ function Culture() {
             <div key={item._id} className="culture-card">
               {/* IMAGE + MODAL TRIGGER */}
               <img
-                src={`http://localhost:5000${item.image}`}
+                src={`https://privetschool-backend.ohbjmh.easypanel.host${item.image}`}
                 alt={item.title}
                 className="culture-image"
                 onClick={() =>
-                  setSelectedImage(`http://localhost:5000${item.image}`)
+                  setSelectedImage(`https://privetschool-backend.ohbjmh.easypanel.host${item.image}`)
                 }
               />
 
